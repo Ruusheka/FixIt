@@ -3,19 +3,19 @@ import { motion } from 'framer-motion';
 import { Send, Radio, AlertTriangle, CloudRain, Construction, Megaphone } from 'lucide-react';
 
 const broadcastTypes = [
-    { value: 'emergency', label: 'Emergency Alert', icon: <AlertTriangle className="w-4 h-4" />, color: 'text-red-400' },
-    { value: 'maintenance', label: 'Maintenance Notice', icon: <Construction className="w-4 h-4" />, color: 'text-orange-400' },
-    { value: 'weather', label: 'Weather Warning', icon: <CloudRain className="w-4 h-4" />, color: 'text-blue-400' },
-    { value: 'announcement', label: 'General Announcement', icon: <Megaphone className="w-4 h-4" />, color: 'text-purple-400' },
+    { value: 'emergency', label: 'Emergency', icon: <AlertTriangle className="w-4 h-4" />, color: 'text-red-600' },
+    { value: 'maintenance', label: 'Maintenance', icon: <Construction className="w-4 h-4" />, color: 'text-brand-secondary' },
+    { value: 'weather', label: 'Weather', icon: <CloudRain className="w-4 h-4" />, color: 'text-brand-secondary' },
+    { value: 'announcement', label: 'General', icon: <Megaphone className="w-4 h-4" />, color: 'text-brand-secondary' },
 ];
 
-const zones = ['All Zones', 'Zone 1 - Highway', 'Zone 2 - Downtown', 'Zone 3 - Industrial', 'Zone 4 - Residential', 'Zone 5 - Market'];
+const zones = ['All Operational Zones', 'Zone 1 - Core Highway', 'Zone 2 - Central District', 'Zone 3 - Industrial Hub', 'Zone 4 - Suburban Sector', 'Zone 5 - Perimeter'];
 
 export const BroadcastCenter: React.FC = () => {
     const [type, setType] = useState('announcement');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [zone, setZone] = useState('All Zones');
+    const [zone, setZone] = useState('All Operational Zones');
     const [priority, setPriority] = useState('medium');
     const [sent, setSent] = useState(false);
 
@@ -27,90 +27,113 @@ export const BroadcastCenter: React.FC = () => {
     };
 
     return (
-        <section className="mb-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-                <div className="flex items-center gap-2 mb-1">
-                    <Radio className="w-5 h-5 text-red-400" />
-                    <h2 className="text-xl font-bold text-white">Mass Broadcast Center</h2>
+        <section className="mb-12">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-brand-secondary rounded-xl">
+                        <Radio className="w-6 h-6 text-brand-primary animate-pulse" />
+                    </div>
+                    <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase">Mass Ingress Link</h2>
                 </div>
-                <p className="text-civic-muted text-sm">Push alerts & announcements to citizen dashboards</p>
+                <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12 mt-1">Multi-channel citizen notification system</p>
             </motion.div>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="glass-card p-6"
+                className="minimal-card p-10 bg-white"
             >
                 {sent && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-4 p-3 rounded-xl bg-green-500/15 border border-green-500/20 text-green-400 text-sm font-medium"
+                        className="mb-8 p-4 rounded-2xl bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-[11px] font-black uppercase tracking-widest text-center"
                     >
-                        ✅ Broadcast sent successfully to all citizens!
+                        ⚡ Transmission successful // all endpoints updated
                     </motion.div>
                 )}
 
-                <form onSubmit={handleSend} className="space-y-4">
+                <form onSubmit={handleSend} className="space-y-8">
                     {/* Type selection */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {broadcastTypes.map(bt => (
-                            <button
-                                key={bt.value}
-                                type="button"
-                                onClick={() => setType(bt.value)}
-                                className={`flex items-center gap-2 p-3 rounded-xl text-xs font-medium transition-all ${type === bt.value ? 'glass-card-light border-civic-orange/30 text-white' : 'glass-card text-civic-muted hover:text-white'
-                                    }`}
-                            >
-                                <span className={bt.color}>{bt.icon}</span>
-                                {bt.label}
-                            </button>
-                        ))}
+                    <div className="space-y-4">
+                        <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Alert Vector</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {broadcastTypes.map(bt => (
+                                <button
+                                    key={bt.value}
+                                    type="button"
+                                    onClick={() => setType(bt.value)}
+                                    className={`flex items-center justify-center gap-3 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${type === bt.value
+                                            ? 'bg-brand-secondary text-white border-brand-secondary'
+                                            : 'bg-white text-brand-secondary/40 border-brand-secondary/5 hover:border-brand-secondary/20 hover:text-brand-secondary'
+                                        }`}
+                                >
+                                    <span className={type === bt.value ? 'text-brand-primary' : bt.color}>{bt.icon}</span>
+                                    {bt.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Title */}
-                    <input
-                        type="text" required
-                        value={title} onChange={e => setTitle(e.target.value)}
-                        placeholder="Broadcast title..."
-                        className="w-full glass-card bg-white/5 text-white text-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-civic-orange/50 placeholder:text-civic-muted/50"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            {/* Title */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Tactical Title</label>
+                                <input
+                                    type="text" required
+                                    value={title} onChange={e => setTitle(e.target.value)}
+                                    placeholder="Brief subject..."
+                                    className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-5 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 placeholder:text-brand-secondary/20 font-bold"
+                                />
+                            </div>
 
-                    {/* Description */}
-                    <textarea
-                        required rows={3}
-                        value={description} onChange={e => setDescription(e.target.value)}
-                        placeholder="Detailed message for citizens..."
-                        className="w-full glass-card bg-white/5 text-white text-sm px-4 py-3 focus:outline-none focus:ring-1 focus:ring-civic-orange/50 placeholder:text-civic-muted/50 resize-none"
-                    />
+                            {/* Zone + Priority */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Target Sector</label>
+                                    <select
+                                        value={zone} onChange={e => setZone(e.target.value)}
+                                        className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none"
+                                    >
+                                        {zones.map(z => <option key={z} value={z}>{z.toUpperCase()}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Priority Index</label>
+                                    <select
+                                        value={priority} onChange={e => setPriority(e.target.value)}
+                                        className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none"
+                                    >
+                                        <option value="low">LOW PRIORITY</option>
+                                        <option value="medium">NORMAL LOAD</option>
+                                        <option value="high">HIGH PRIORITY</option>
+                                        <option value="critical">CRITICAL ALERT</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-                    {/* Zone + Priority */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <select
-                            value={zone} onChange={e => setZone(e.target.value)}
-                            className="glass-card bg-white/5 text-white text-sm px-3 py-2.5 focus:outline-none"
-                        >
-                            {zones.map(z => <option key={z} value={z} className="bg-civic-dark">{z}</option>)}
-                        </select>
-                        <select
-                            value={priority} onChange={e => setPriority(e.target.value)}
-                            className="glass-card bg-white/5 text-white text-sm px-3 py-2.5 focus:outline-none"
-                        >
-                            <option value="low" className="bg-civic-dark">Low Priority</option>
-                            <option value="medium" className="bg-civic-dark">Medium Priority</option>
-                            <option value="high" className="bg-civic-dark">High Priority</option>
-                            <option value="critical" className="bg-civic-dark">Critical</option>
-                        </select>
+                        {/* Description */}
+                        <div className="space-y-2 flex flex-col">
+                            <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Primary Payload</label>
+                            <textarea
+                                required rows={6}
+                                value={description} onChange={e => setDescription(e.target.value)}
+                                placeholder="Detailed broadcast content..."
+                                className="w-full h-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-5 py-5 rounded-2xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 placeholder:text-brand-secondary/20 resize-none font-medium leading-relaxed"
+                            />
+                        </div>
                     </div>
 
                     <motion.button
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.98 }}
                         type="submit"
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-red-500 to-civic-orange text-white font-semibold rounded-2xl shadow-lg shadow-red-500/20"
+                        className="w-full flex items-center justify-center gap-4 py-5 bg-brand-secondary text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-brand-secondary/10 hover:opacity-95 transition-all"
                     >
-                        <Send className="w-4 h-4" /> Broadcast to Citizens
+                        <Send className="w-5 h-5" /> Execute Wide-Range Transmission
                     </motion.button>
                 </form>
             </motion.div>

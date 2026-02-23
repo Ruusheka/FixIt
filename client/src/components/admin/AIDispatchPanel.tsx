@@ -46,48 +46,54 @@ const demoRecommendations: Recommendation[] = [
     },
 ];
 
-const severityColors: Record<string, string> = {
+const severityBorder: Record<string, string> = {
     high: 'border-l-red-500',
-    medium: 'border-l-orange-500',
-    low: 'border-l-green-500',
+    medium: 'border-l-brand-secondary/40',
+    low: 'border-l-brand-secondary/10',
 };
 
 export const AIDispatchPanel: React.FC = () => (
-    <section className="mb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-                <Brain className="w-5 h-5 text-purple-400" />
-                <h2 className="text-xl font-bold text-white">AI Auto-Dispatch</h2>
+    <section className="mb-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-brand-secondary rounded-xl">
+                    <Brain className="w-6 h-6 text-brand-primary" />
+                </div>
+                <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase">Predictive Dispatch</h2>
             </div>
-            <p className="text-civic-muted text-sm">AI-generated recommendations based on pattern analysis</p>
+            <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12 mt-1">AI-synthesized pattern recommendations</p>
         </motion.div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
             {demoRecommendations.map((rec, i) => (
                 <motion.div
                     key={rec.id}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -10 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 }}
-                    className={`glass-card p-4 border-l-2 ${severityColors[rec.severity]} flex items-start gap-4`}
+                    transition={{ delay: i * 0.05 }}
+                    whileHover={{ x: 5 }}
+                    className={`minimal-card p-5 bg-white border-l-4 ${severityBorder[rec.severity]} flex items-center justify-between gap-6 group cursor-pointer shadow-soft`}
                 >
-                    <div className="p-2 rounded-lg bg-purple-500/15 text-purple-400 flex-shrink-0">
-                        {rec.icon}
+                    <div className="flex items-center gap-5 flex-1 min-w-0">
+                        <div className="p-3 rounded-2xl bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-secondary group-hover:text-brand-primary transition-all">
+                            {rec.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm text-brand-secondary font-black tracking-tight leading-tight mb-1">{rec.message}</p>
+                            <p className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-widest">{rec.zone}</p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium">{rec.message}</p>
-                        <p className="text-xs text-civic-muted mt-0.5">{rec.zone}</p>
-                    </div>
+
                     <div className="flex gap-2 flex-shrink-0">
-                        <button className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-semibold text-green-400 glass-card hover:bg-green-500/10 transition-colors">
-                            <CheckCircle className="w-3 h-3" /> Accept
+                        <button className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brand-secondary bg-brand-secondary/5 rounded-xl hover:bg-brand-secondary hover:text-white transition-all">
+                            <CheckCircle className="w-3.5 h-3.5" /> Accept
                         </button>
-                        <button className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-civic-muted glass-card hover:bg-white/5 transition-colors">
-                            <Search className="w-3 h-3" /> Investigate
+                        <button className="flex items-center justify-center p-2.5 text-brand-secondary/20 hover:text-brand-secondary transition-colors bg-brand-secondary/5 rounded-xl">
+                            <Search className="w-4 h-4" />
                         </button>
-                        <button className="flex items-center gap-1 px-3 py-1.5 text-[11px] text-civic-muted glass-card hover:bg-white/5 transition-colors">
-                            <XCircle className="w-3 h-3" /> Ignore
+                        <button className="flex items-center justify-center p-2.5 text-brand-secondary/20 hover:text-brand-secondary transition-colors bg-brand-secondary/5 rounded-xl">
+                            <XCircle className="w-4 h-4" />
                         </button>
                     </div>
                 </motion.div>

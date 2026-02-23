@@ -7,12 +7,29 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export const analyzeIssueImage = async (imageBuffer: Buffer, mimeType: string) => {
     try {
-        const prompt = `Analyze this image of a civic issue. Return a JSON object with: 
-    1. verified_category: (pothole, garbage, streetlight, water_leak, other)
-    2. severity: (1-10 integer, 10 being critical emergency)
-    3. risk_score: (0.0 - 1.0 float based on visual danger)
-    4. description: (short description of what is seen)
-    `;
+        const prompt = `Analyze this image for civic issues. 
+    You MUST return a JSON object with the following schema:
+    {
+        "is_valid_civic_issue": boolean, // true if it falls under the categories below
+        "verified_category": "infrastructure" | "environmental" | "utilities" | "traffic" | "civic_sense" | "other",
+        "severity": number, // 1-10
+        "visual_risk_score": number, // 0.0 - 1.0 based on immediate physical danger
+        "description": string, // short tactical summary
+        "factors": {
+            "area_degradation": number, // 0-1 (visible wear/deterioration)
+            "hazard_level": number, // 0-1 (immediate threat to life/property)
+            "blockage_factor": number // 0-1 (how much it obstructs movement)
+        }
+    }
+
+    Categories:
+    1. infrastructure: Unhygienic roads, potholes, broken lights, sewage.
+    2. environmental: Garbage, illegal dumping, littering.
+    3. utilities: Water leak, electricity issues.
+    4. traffic: Illegal parking, encroachment, stray cattle.
+    5. civic_sense: Traffic violations, vandalism.
+
+    If the image is NOT a civic issue, set is_valid_civic_issue to false and verified_category to "other".`;
 
         const imagePart = {
             inlineData: {

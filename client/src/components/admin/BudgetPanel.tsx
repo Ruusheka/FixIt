@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, Eye, EyeOff, Wrench, Clock, Package } from 'lucide-react';
+import { DollarSign, Eye, EyeOff, Clock, Package } from 'lucide-react';
 
 interface BudgetItem {
     id: string;
@@ -23,10 +23,15 @@ export const BudgetPanel: React.FC = () => {
     const totalCost = demoItems.reduce((s, i) => s + i.repairCost, 0);
 
     return (
-        <section className="mb-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-1">Budget Transparency</h2>
-                <p className="text-civic-muted text-sm">Repair cost publishing for civic trust</p>
+        <section className="mb-12">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-brand-secondary rounded-xl">
+                        <DollarSign className="w-6 h-6 text-brand-primary" />
+                    </div>
+                    <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase">Fiscal Ledger</h2>
+                </div>
+                <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12 mt-1">Operational expenditure transparency portal</p>
             </motion.div>
 
             {/* Total cost card */}
@@ -34,58 +39,64 @@ export const BudgetPanel: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="glass-card p-5 mb-4 flex items-center justify-between"
+                className="minimal-card p-10 mb-8 flex items-center justify-between bg-white border border-brand-secondary/10"
             >
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-green-500/15 text-green-400">
-                        <DollarSign className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-civic-muted uppercase tracking-wider">Total Expenditure</div>
-                        <div className="text-2xl font-bold text-white">₹{totalCost.toLocaleString()}</div>
+                <div>
+                    <div className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-[0.2em] mb-2">Total Combined Expenditure</div>
+                    <div className="text-6xl font-black text-brand-secondary tracking-tighter transition-all hover:scale-[1.02] cursor-default">
+                        ₹{totalCost.toLocaleString()}
                     </div>
                 </div>
-                <div className="text-xs text-civic-muted">{demoItems.filter(i => i.published).length}/{demoItems.length} published</div>
+                <div className="text-right">
+                    <div className="px-5 py-2.5 rounded-2xl bg-brand-secondary text-brand-primary text-[10px] font-black uppercase tracking-widest mb-3">
+                        Audited Infrastructure
+                    </div>
+                    <div className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">
+                        {demoItems.filter(i => i.published).length}/{demoItems.length} Nodes Published
+                    </div>
+                </div>
             </motion.div>
 
             {/* Items */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {demoItems.map((item, i) => (
                     <motion.div
                         key={item.id}
                         initial={{ opacity: 0, y: 15 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ delay: i * 0.06 }}
-                        className="glass-card p-4"
+                        transition={{ delay: i * 0.05 }}
+                        className="minimal-card p-6 bg-white group hover:border-brand-secondary/20 transition-all cursor-default"
                     >
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-6 border-b border-brand-secondary/5 pb-4">
                             <div>
-                                <span className="text-civic-orange font-mono text-xs font-bold">{item.ticket_id}</span>
-                                <span className="text-civic-muted text-xs ml-2 capitalize">• {item.category}</span>
+                                <span className="text-brand-secondary font-black text-xs uppercase tracking-widest">{item.ticket_id}</span>
+                                <span className="text-brand-secondary/30 text-[10px] font-bold ml-3 uppercase tracking-widest">// {item.category}</span>
                             </div>
-                            <button className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${item.published ? 'bg-green-500/15 text-green-400' : 'bg-white/5 text-civic-muted hover:text-white'
+                            <button className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${item.published
+                                    ? 'bg-brand-secondary text-brand-primary'
+                                    : 'bg-brand-secondary/5 text-brand-secondary/40 hover:text-brand-secondary'
                                 }`}>
-                                {item.published ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                                {item.published ? 'Public' : 'Private'}
+                                {item.published ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                {item.published ? 'Publicized' : 'Restricted'}
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                            <div className="glass-card-light p-2 rounded-lg">
-                                <DollarSign className="w-3 h-3 mx-auto text-green-400 mb-0.5" />
-                                <div className="text-sm font-bold text-white">₹{item.repairCost.toLocaleString()}</div>
-                                <div className="text-[9px] text-civic-muted">Cost</div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="p-4 rounded-2xl bg-brand-secondary/5 group-hover:bg-brand-secondary transition-all">
+                                <DollarSign className="w-4 h-4 text-brand-secondary group-hover:text-brand-primary mb-2 opacity-40 mx-auto" />
+                                <div className="text-sm font-black text-brand-secondary group-hover:text-brand-primary text-center">₹{item.repairCost.toLocaleString()}</div>
+                                <div className="text-[9px] font-black text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest text-center mt-1">Cost</div>
                             </div>
-                            <div className="glass-card-light p-2 rounded-lg">
-                                <Package className="w-3 h-3 mx-auto text-blue-400 mb-0.5" />
-                                <div className="text-[11px] font-medium text-white truncate">{item.materials.split(',')[0]}</div>
-                                <div className="text-[9px] text-civic-muted">Materials</div>
+                            <div className="p-4 rounded-2xl bg-brand-secondary/5 group-hover:bg-brand-secondary transition-all">
+                                <Package className="w-4 h-4 text-brand-secondary group-hover:text-brand-primary mb-2 opacity-40 mx-auto" />
+                                <div className="text-[11px] font-black text-brand-secondary group-hover:text-brand-primary truncate text-center">{item.materials.split(',')[0]}</div>
+                                <div className="text-[9px] font-black text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest text-center mt-1">Supply</div>
                             </div>
-                            <div className="glass-card-light p-2 rounded-lg">
-                                <Clock className="w-3 h-3 mx-auto text-orange-400 mb-0.5" />
-                                <div className="text-sm font-bold text-white">{item.laborHours}h</div>
-                                <div className="text-[9px] text-civic-muted">Labor</div>
+                            <div className="p-4 rounded-2xl bg-brand-secondary/5 group-hover:bg-brand-secondary transition-all">
+                                <Clock className="w-4 h-4 text-brand-secondary group-hover:text-brand-primary mb-2 opacity-40 mx-auto" />
+                                <div className="text-sm font-black text-brand-secondary group-hover:text-brand-primary text-center">{item.laborHours}h</div>
+                                <div className="text-[9px] font-black text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest text-center mt-1">Load</div>
                             </div>
                         </div>
                     </motion.div>

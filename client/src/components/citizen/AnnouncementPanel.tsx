@@ -68,18 +68,18 @@ export const AnnouncementPanel: React.FC<AnnouncementPanelProps> = ({ announceme
     const items = announcements && announcements.length > 0 ? announcements : demoAnnouncements;
 
     return (
-        <section id="announcements" className="px-6 md:px-12 lg:px-20 py-16">
+        <section id="announcements" className="px-6 md:px-12 lg:px-20 py-24 border-t border-brand-secondary/5">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="mb-8"
+                className="mb-12 text-center"
             >
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Announcements & Alerts</h2>
-                <p className="text-civic-muted text-sm">Stay updated with civic notifications</p>
+                <h2 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase mb-4">Announcements & Alerts</h2>
+                <p className="text-brand-secondary/40 text-[10px] font-black uppercase tracking-[0.3em]">Critical updates from the civic intelligence network</p>
             </motion.div>
 
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
                 {items.map((announcement, i) => {
                     const config = typeConfig[announcement.type] || typeConfig.info;
                     return (
@@ -90,17 +90,21 @@ export const AnnouncementPanel: React.FC<AnnouncementPanelProps> = ({ announceme
                             viewport={{ once: true }}
                             transition={{ delay: i * 0.08 }}
                             whileHover={{ x: 4 }}
-                            className="glass-card p-4 flex items-start gap-4 cursor-pointer"
+                            className="minimal-card p-6 flex items-start gap-6 cursor-pointer border-brand-secondary/5"
                         >
-                            <div className={`p-2 rounded-lg ${config.bg} ${config.color} flex-shrink-0`}>
+                            <div className={`p-3 rounded-2xl ${config.bg} ${config.color} flex-shrink-0 shadow-lg`}>
                                 {config.icon}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h4 className="font-semibold text-sm text-white">{announcement.title}</h4>
-                                    <span className="text-xs text-civic-muted flex-shrink-0 ml-2">{getTimeAgo(announcement.created_at)}</span>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="font-black text-brand-secondary uppercase tracking-tight text-sm">{announcement.title}</h4>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-secondary/20 flex-shrink-0 ml-4">
+                                        {getTimeAgo(announcement.created_at)}
+                                    </span>
                                 </div>
-                                <p className="text-xs text-civic-muted leading-relaxed line-clamp-2">{announcement.description}</p>
+                                <p className="text-xs font-bold text-brand-secondary/40 leading-relaxed uppercase tracking-tight line-clamp-2">
+                                    {announcement.description}
+                                </p>
                             </div>
                         </motion.div>
                     );
