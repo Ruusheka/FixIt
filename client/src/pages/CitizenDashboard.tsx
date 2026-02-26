@@ -34,12 +34,8 @@ const demoTickets: Ticket[] = [
 const navItems = [
     { label: 'Dashboard', path: '/citizen', icon: LayoutDashboard },
     { label: 'Reports Hub', path: '/reports', icon: FileText },
-<<<<<<< HEAD
     { label: 'Rewards', path: '/rewards', icon: Gift },
     { label: 'Alerts', path: '/citizen#announcements', icon: Bell },
-=======
-    { label: 'Alerts', path: '/citizen/announcements', icon: Bell },
->>>>>>> 00c94370d3c732e09929360dbea24185152e3518
 ];
 
 export const CitizenDashboard: React.FC = () => {

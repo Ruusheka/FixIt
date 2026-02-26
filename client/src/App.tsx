@@ -18,16 +18,9 @@ import { AdminDashboard } from './pages/Admin';
 import { FieldWorker } from './pages/Worker';
 import { ReportsPage } from './pages/ReportsPage';
 import { ReportDetailPage } from './pages/ReportDetailPage';
-<<<<<<< HEAD
 import { RewardsPage } from './pages/RewardsPage';
-import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { MyReportsPage } from './pages/MyReportsPage';
 import { ProfilePage } from './pages/ProfilePage';
-=======
-import { AdminReportsHub } from './pages/AdminReportsHub';
-import { AdminReportDetail } from './pages/AdminReportDetail';
-import { AdminOperations } from './pages/AdminOperations';
->>>>>>> 00c94370d3c732e09929360dbea24185152e3518
 
 const AnimatedRoutes = () => {
   const { user, profile, loading } = useAuth();
