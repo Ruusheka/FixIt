@@ -20,6 +20,9 @@ let supabaseInstance: ReturnType<typeof createClient> | null = null;
 
 export const getSupabase = () => {
     if (!supabaseInstance) {
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Supabase URL or Key is missing. Check your .env file.');
+        }
         supabaseInstance = createClient(supabaseUrl, supabaseKey, {
             auth: {
                 persistSession: true,

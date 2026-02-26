@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
         description: 'Track your submitted tickets',
     },
     {
+<<<<<<< HEAD
         label: 'Nearby Issues',
         icon: <MapPin className="w-5 h-5" />,
         path: '/reports',                          // ← changed from '#nearby'
@@ -42,6 +43,11 @@ const navItems: NavItem[] = [
         label: 'Announcements',
         icon: <Megaphone className="w-5 h-5" />,
         path: '/announcements',           // ← updated
+=======
+        label: 'Announcements',
+        icon: <Megaphone className="w-5 h-5" />,
+        path: '/citizen/announcements',
+>>>>>>> 00c94370d3c732e09929360dbea24185152e3518
         description: 'City updates & notices',
     },
     {
