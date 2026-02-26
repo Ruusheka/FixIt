@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../services/supabase';
 import { RoleSelector } from '../components/RoleSelector';
 
 export const Login: React.FC = () => {
@@ -11,7 +12,7 @@ export const Login: React.FC = () => {
     const [selectedRole, setSelectedRole] = useState<'citizen' | 'worker' | 'admin'>('citizen');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signIn, profile } = useAuth();
+    const { signIn, signOut } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -20,32 +21,48 @@ export const Login: React.FC = () => {
         setLoading(true);
 
         try {
+            // Use the standardized signIn from useAuth
             await signIn(email, password);
-            // Profile is fetched in AuthProvider after session update
-            // We'll need a way to check it here or let App.tsx handle it with a redirect
+
+            // Fetch profile to verify role
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Authentication failed: No user found');
+
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError || !profileData) {
+                console.error('Profile fetch error:', profileError);
+                throw new Error('Verification failed: Could not retrieve user profile. Please try again.');
+            }
+
+            const profile = profileData as { role: string };
+
+            if (profile.role !== selectedRole) {
+                await signOut();
+                throw new Error(`Unauthorized: Your account is registered as ${profile.role}, not ${selectedRole}.`);
+            }
+
+            // Route based on role
+            const routes = {
+                citizen: '/citizen',
+                worker: '/worker',
+                admin: '/admin'
+            };
+            navigate(routes[profile.role as keyof typeof routes]);
         } catch (err: any) {
-            setError(err.message || 'Failed to sign in');
+            console.error('Login error:', err);
+            setError(err.message || 'Failed to sign in. Check your connection.');
+        } finally {
             setLoading(false);
         }
     };
 
-    // Handle role routing and verification
-    React.useEffect(() => {
-        if (profile) {
-            if (profile.role !== selectedRole) {
-                setError(`Unauthorized: Your account does not have ${selectedRole} privileges.`);
-                setLoading(false);
-            } else {
-                // Route based on role
-                const routes = {
-                    citizen: '/citizen',
-                    worker: '/worker',
-                    admin: '/admin'
-                };
-                navigate(routes[profile.role]);
-            }
-        }
-    }, [profile, selectedRole, navigate]);
+    // Remove the useEffect role check as we now handle it in handleSubmit
+    // for a more "active" verification flow.
 
     return (
         <div className="min-h-screen flex bg-brand-primary overflow-hidden">

@@ -16,6 +16,7 @@ import {
     TrendingDown,
     ArrowRight
 } from 'lucide-react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MinimalLayout } from '../components/MinimalLayout';
 
 // Admin components
@@ -26,8 +27,6 @@ import { LiveIssuePanel } from '../components/admin/LiveIssuePanel';
 import { WorkerAssignModal } from '../components/admin/WorkerAssignModal';
 import { VerificationPanel } from '../components/admin/VerificationPanel';
 import { HeatmapSection } from '../components/admin/HeatmapSection';
-import { AIDispatchPanel } from '../components/admin/AIDispatchPanel';
-import { ResourceLoad } from '../components/admin/ResourceLoad';
 import { BroadcastCenter } from '../components/admin/BroadcastCenter';
 import { BudgetPanel } from '../components/admin/BudgetPanel';
 
@@ -42,14 +41,15 @@ interface Profile {
 
 const navItems = [
     { label: 'Overview', path: '/admin', icon: BarChart3 },
-    { label: 'Reports Hub', path: '/reports', icon: ClipboardCheck },
-    { label: 'Operations', path: '/admin#ops', icon: Shield },
-    { label: 'Broadcast', path: '/admin#broadcast', icon: Radio },
-    { label: 'Finances', path: '/admin#budget', icon: DollarSign },
-    { label: 'Userbase', path: '/admin#users', icon: Users },
+    { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
+    { label: 'Operations', path: '/admin/operations', icon: Shield },
+    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
+    { label: 'Finances', path: '/admin/budget', icon: DollarSign },
+    { label: 'Userbase', path: '/admin/users', icon: Users },
 ];
 
 export const AdminDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const { profile: adminProfile } = useAuth();
     const [issues, setIssues] = useState<any[]>([]);
     const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -72,8 +72,16 @@ export const AdminDashboard: React.FC = () => {
         };
     }, []);
 
+    const location = useLocation();
+
+    useEffect(() => {
+        const pathParts = location.pathname.split('/');
+        const lastPart = pathParts[pathParts.length - 1];
+        setActiveSection(lastPart === 'admin' ? 'overview' : lastPart);
+    }, [location.pathname]);
+
     const fetchIssues = async () => {
-        const { data } = await supabase.from('issues').select('*').order('created_at', { ascending: false });
+        const { data } = await (supabase.from('issues') as any).select('*').order('created_at', { ascending: false });
         if (data) setIssues(data);
     };
 
@@ -83,12 +91,12 @@ export const AdminDashboard: React.FC = () => {
     };
 
     const updateStatus = async (id: string, status: string) => {
-        await supabase.from('issues').update({ status }).eq('id', id);
+        await (supabase.from('issues') as any).update({ status }).eq('id', id);
         fetchIssues();
     };
 
     const updateUserRole = async (userId: string, newRole: 'citizen' | 'worker') => {
-        const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+        const { error } = await (supabase.from('profiles') as any).update({ role: newRole }).eq('id', userId);
         if (!error) fetchProfiles();
     };
 
@@ -98,7 +106,7 @@ export const AdminDashboard: React.FC = () => {
     };
 
     const handleAssignSubmit = async (issueId: string, data: any) => {
-        await supabase.from('issues').update({
+        await (supabase.from('issues') as any).update({
             status: 'assigned',
             assigned_worker: data.worker,
         }).eq('id', issueId);
@@ -116,77 +124,111 @@ export const AdminDashboard: React.FC = () => {
     return (
         <MinimalLayout navItems={navItems} title="Admin Command Center">
             <div className="space-y-10">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                        { label: 'Active Reports', value: statsData.totalActive, icon: Zap, trend: '-12% vs last week' },
-                        { label: 'Critical Zones', value: statsData.criticalZones, icon: AlertTriangle, trend: '+2 new risk areas' },
-                        { label: 'Resolved Today', value: statsData.resolvedToday, icon: CheckCircle2, trend: 'SLA: 98.4%' },
-                        { label: 'Avg Latency', value: `${statsData.avgResolutionHrs}h`, icon: TrendingDown, trend: '-2.4h improvement' },
-                    ].map((stat, i) => (
-                        <motion.div
-                            key={i}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="minimal-card p-6"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="p-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/10">
-                                    <stat.icon size={20} className="text-brand-secondary" />
+                {activeSection === 'overview' && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-10"
+                    >
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[
+                                { label: 'Active Reports', value: statsData.totalActive, icon: Zap, trend: '-12% vs last week', link: '/admin/reports?status=reported' },
+                                { label: 'Critical Zones', value: statsData.criticalZones, icon: AlertTriangle, trend: '+2 new risk areas', link: '/admin/reports?priority=High' },
+                                { label: 'Resolved Today', value: statsData.resolvedToday, icon: CheckCircle2, trend: 'SLA: 98.4%', link: '/admin/reports?status=resolved' },
+                                { label: 'Avg Latency', value: `${statsData.avgResolutionHrs}h`, icon: TrendingDown, trend: '-2.4h improvement', link: '/admin/reports?overdue=true' },
+                            ].map((stat, i) => (
+                                <Link
+                                    key={i}
+                                    to={stat.link}
+                                    className="block"
+                                >
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.1 }}
+                                        whileHover={{ y: -5, scale: 1.02 }}
+                                        className="minimal-card p-6 h-full hover:shadow-card-hover hover:border-brand-secondary/20 transition-all"
+                                    >
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="p-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/10">
+                                                <stat.icon size={20} className="text-brand-secondary" />
+                                            </div>
+                                            <span className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest leading-none mt-1">
+                                                Live Metrics
+                                            </span>
+                                        </div>
+                                        <h4 className="text-3xl font-bold tracking-tight mb-1">{stat.value}</h4>
+                                        <p className="text-sm font-medium text-brand-secondary/40">{stat.label}</p>
+                                        <div className="mt-4 pt-4 border-t border-brand-secondary/5 flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-brand-secondary/60">{stat.trend}</span>
+                                            <ArrowRight size={12} className="text-brand-secondary/20" />
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Main Content: Intelligence & Analytics */}
+                        <div className="space-y-12">
+                            <section className="space-y-8">
+                                <div className="flex items-center justify-between border-b border-brand-secondary/5 pb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black tracking-tighter text-brand-secondary uppercase">System Intelligence</h3>
+                                        <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest mt-1">Global performance & SLA response metrics</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {['24h', '7d', '30d'].map(t => (
+                                            <button key={t} className="px-4 py-1.5 text-[10px] font-black border border-brand-secondary/10 rounded-xl hover:bg-brand-secondary/5 transition-all uppercase tracking-widest">
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <span className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest leading-none mt-1">
-                                    Live Metrics
-                                </span>
-                            </div>
-                            <h4 className="text-3xl font-bold tracking-tight mb-1">{stat.value}</h4>
-                            <p className="text-sm font-medium text-brand-secondary/40">{stat.label}</p>
-                            <div className="mt-4 pt-4 border-t border-brand-secondary/5 flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-brand-secondary/60">{stat.trend}</span>
-                                <ArrowRight size={12} className="text-brand-secondary/20" />
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                                <ReportAnalytics issues={issues} />
+                            </section>
 
-                {/* Main Content: Intelligence & Analytics */}
-                <div className="space-y-12">
-                    <section className="space-y-8">
-                        <div className="flex items-center justify-between border-b border-brand-secondary/5 pb-6">
-                            <div>
-                                <h3 className="text-2xl font-black tracking-tighter text-brand-secondary uppercase">System Intelligence</h3>
-                                <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest mt-1">Global performance & SLA response metrics</p>
-                            </div>
-                            <div className="flex gap-2">
-                                {['24h', '7d', '30d'].map(t => (
-                                    <button key={t} className="px-4 py-1.5 text-[10px] font-black border border-brand-secondary/10 rounded-xl hover:bg-brand-secondary/5 transition-all uppercase tracking-widest">
-                                        {t}
-                                    </button>
-                                ))}
-                            </div>
+                            <section className="space-y-8">
+                                <div className="flex items-center justify-between border-b border-brand-secondary/5 pb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black tracking-tighter text-brand-secondary uppercase">Active Operations</h3>
+                                        <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest mt-1">Real-time incident response queue</p>
+                                    </div>
+                                    <Link to="/admin/reports" className="text-[10px] font-black text-brand-secondary opacity-40 hover:opacity-100 uppercase tracking-widest flex items-center gap-2 transition-all">
+                                        Expand Repository <ArrowRight size={14} />
+                                    </Link>
+                                </div>
+                                <LiveIssuePanel issues={issues} onAssign={handleAssign} onUpdateStatus={updateStatus} />
+                            </section>
                         </div>
-                        <ReportAnalytics />
-                    </section>
+                    </motion.div>
+                )}
 
-                    <section className="space-y-8">
-                        <div className="flex items-center justify-between border-b border-brand-secondary/5 pb-6">
-                            <div>
-                                <h3 className="text-2xl font-black tracking-tighter text-brand-secondary uppercase">Active Operations</h3>
-                                <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest mt-1">Real-time incident response queue</p>
-                            </div>
-                            <button className="text-[10px] font-black text-brand-secondary opacity-40 hover:opacity-100 uppercase tracking-widest flex items-center gap-2 transition-all">
-                                Expand Repository <ArrowRight size={14} />
-                            </button>
-                        </div>
-                        <LiveIssuePanel issues={issues} onAssign={handleAssign} onUpdateStatus={updateStatus} />
-                    </section>
-                </div>
+                {activeSection === 'broadcast' && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        <BroadcastCenter />
+                    </motion.div>
+                )}
 
-                {/* Intelligence & Resources Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <AIDispatchPanel />
-                    <ResourceLoad />
-                </div>
+                {activeSection === 'budget' && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
+                        <BudgetPanel />
+                    </motion.div>
+                )}
+
+                {activeSection === 'users' && (
+                    <div className="minimal-card p-10 text-center border-dashed border-brand-secondary/10 rounded-3xl">
+                        <Users className="w-16 h-16 text-brand-secondary/5 mx-auto mb-4" />
+                        <h3 className="text-xl font-black text-brand-secondary/20 uppercase tracking-tighter">User Management Module</h3>
+                        <p className="text-[10px] font-black text-brand-secondary/10 uppercase tracking-widest">Temporal access control restricted in this build</p>
+                    </div>
+                )}
             </div>
 
             <WorkerAssignModal

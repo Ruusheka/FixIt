@@ -30,7 +30,11 @@ app.use((req, res, next) => {
     next();
 });
 const issues_1 = __importDefault(require("./routes/issues"));
+const broadcasts_1 = __importDefault(require("./routes/broadcasts"));
+const operations_1 = __importDefault(require("./routes/operations"));
 app.use('/api/issues', issues_1.default);
+app.use('/api/broadcasts', broadcasts_1.default);
+app.use('/api/operations', operations_1.default);
 app.get('/', (req, res) => {
     res.json({ message: 'FixIt API is running' });
 });

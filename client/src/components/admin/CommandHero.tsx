@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
     AlertTriangle, CheckCircle2, Clock, Activity,
     Shield, Zap, TrendingUp
@@ -56,10 +57,10 @@ export const CommandHero: React.FC<CommandHeroProps> = ({ stats: s }) => {
     const status = getCityStatus(d.criticalZones);
 
     const statCards = [
-        { label: 'Active Reports', value: d.totalActive, icon: <AlertTriangle className="w-4 h-4" />, color: 'text-brand-secondary' },
-        { label: 'Ingress Today', value: d.reportedToday, icon: <Zap className="w-4 h-4" />, color: 'text-brand-secondary' },
-        { label: 'Resolved', value: d.resolvedToday, icon: <CheckCircle2 className="w-4 h-4" />, color: 'text-brand-secondary' },
-        { label: 'Avg SLA', value: d.avgResolutionHrs, suffix: 'h', decimals: 1, icon: <Clock className="w-4 h-4" />, color: 'text-brand-secondary' },
+        { label: 'Active Reports', value: d.totalActive, icon: <AlertTriangle className="w-4 h-4" />, color: 'text-brand-secondary', link: '/admin/reports?status=reported' },
+        { label: 'Ingress Today', value: d.reportedToday, icon: <Zap className="w-4 h-4" />, color: 'text-brand-secondary', link: '/admin/reports?sortBy=newest' },
+        { label: 'Resolved', value: d.resolvedToday, icon: <CheckCircle2 className="w-4 h-4" />, color: 'text-brand-secondary', link: '/admin/reports?status=resolved' },
+        { label: 'Avg SLA', value: d.avgResolutionHrs, suffix: 'h', decimals: 1, icon: <Clock className="w-4 h-4" />, color: 'text-brand-secondary', link: '/admin/reports?overdue=true' },
     ];
 
     return (
@@ -100,38 +101,43 @@ export const CommandHero: React.FC<CommandHeroProps> = ({ stats: s }) => {
             {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((card, i) => (
-                    <motion.div
+                    <Link
                         key={card.label}
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="minimal-card p-6 border-b border-brand-secondary/5 group hover:bg-brand-secondary transition-all cursor-default"
+                        to={card.link || '#'}
+                        className="block"
                     >
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-[10px] text-brand-secondary/40 font-black uppercase tracking-widest group-hover:text-brand-primary/40 transition-colors">
-                                {card.label}
-                            </span>
-                            <div className="p-1.5 rounded-lg bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-all">
-                                {card.icon}
+                        <motion.div
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="minimal-card p-6 border-b border-brand-secondary/5 group hover:bg-brand-secondary transition-all cursor-pointer"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-[10px] text-brand-secondary/40 font-black uppercase tracking-widest group-hover:text-brand-primary/40 transition-colors">
+                                    {card.label}
+                                </span>
+                                <div className="p-1.5 rounded-lg bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-all">
+                                    {card.icon}
+                                </div>
                             </div>
-                        </div>
-                        <div className="text-4xl font-black text-brand-secondary group-hover:text-brand-primary tracking-tighter transition-colors">
-                            <AnimatedCounter value={card.value} suffix={card.suffix} decimals={card.decimals} />
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-2 overflow-hidden">
-                            <div className="h-0.5 w-full bg-brand-secondary/5 rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-brand-secondary group-hover:bg-brand-primary"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: '65%' }}
-                                    transition={{ duration: 1.5, delay: 0.5 }}
-                                />
+                            <div className="text-4xl font-black text-brand-secondary group-hover:text-brand-primary tracking-tighter transition-colors">
+                                <AnimatedCounter value={card.value} suffix={card.suffix} decimals={card.decimals} />
                             </div>
-                            <span className="text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/30 whitespace-nowrap">
-                                +12%
-                            </span>
-                        </div>
-                    </motion.div>
+                            <div className="flex items-center gap-1.5 mt-2 overflow-hidden">
+                                <div className="h-0.5 w-full bg-brand-secondary/5 rounded-full overflow-hidden">
+                                    <motion.div
+                                        className="h-full bg-brand-secondary group-hover:bg-brand-primary"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: '65%' }}
+                                        transition={{ duration: 1.5, delay: 0.5 }}
+                                    />
+                                </div>
+                                <span className="text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/30 whitespace-nowrap">
+                                    +12%
+                                </span>
+                            </div>
+                        </motion.div>
+                    </Link>
                 ))}
             </div>
         </section>

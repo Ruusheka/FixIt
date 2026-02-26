@@ -32,7 +32,11 @@ app.use((req, res, next) => {
 });
 
 import issueRoutes from './routes/issues';
+import broadcastRoutes from './routes/broadcasts';
+import operationsRoutes from './routes/operations';
 app.use('/api/issues', issueRoutes);
+app.use('/api/broadcasts', broadcastRoutes);
+app.use('/api/operations', operationsRoutes);
 
 app.get('/', (req, res) => {
     res.json({ message: 'FixIt API is running' });

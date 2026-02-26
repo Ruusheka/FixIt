@@ -68,7 +68,8 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ children, navItems
 
                 <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = (location.pathname + location.hash) === item.path ||
+                            (location.pathname === item.path && !location.hash);
                         return (
                             <button
                                 key={item.path}

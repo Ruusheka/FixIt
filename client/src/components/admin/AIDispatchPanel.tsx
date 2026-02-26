@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Brain, CheckCircle, XCircle, Search, Zap, Droplets, Lightbulb, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Recommendation {
     id: string;
@@ -86,12 +87,18 @@ export const AIDispatchPanel: React.FC = () => (
                     </div>
 
                     <div className="flex gap-2 flex-shrink-0">
-                        <button className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-brand-secondary bg-brand-secondary/5 rounded-xl hover:bg-brand-secondary hover:text-white transition-all">
-                            <CheckCircle className="w-3.5 h-3.5" /> Accept
-                        </button>
-                        <button className="flex items-center justify-center p-2.5 text-brand-secondary/20 hover:text-brand-secondary transition-colors bg-brand-secondary/5 rounded-xl">
+                        <Link
+                            to={`/admin/reports?search=${encodeURIComponent(rec.zone.split(' - ')[0])}`}
+                            className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-brand-secondary rounded-xl hover:opacity-90 transition-all"
+                        >
+                            <CheckCircle className="w-3.5 h-3.5" /> Deploy
+                        </Link>
+                        <Link
+                            to={`/admin/reports?search=${encodeURIComponent(rec.zone.split(' - ')[0])}`}
+                            className="flex items-center justify-center p-2.5 text-brand-secondary/20 hover:text-brand-secondary transition-colors bg-brand-secondary/5 rounded-xl"
+                        >
                             <Search className="w-4 h-4" />
-                        </button>
+                        </Link>
                         <button className="flex items-center justify-center p-2.5 text-brand-secondary/20 hover:text-brand-secondary transition-colors bg-brand-secondary/5 rounded-xl">
                             <XCircle className="w-4 h-4" />
                         </button>

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import {
     Search, Filter, User, Eye, GitMerge, Star,
     MapPin, Calendar, Brain
@@ -132,7 +133,7 @@ export const LiveIssuePanel: React.FC<LiveIssuePanelProps> = ({ issues, onAssign
                                 )}
                                 <div className="absolute top-4 left-4 flex flex-col gap-2">
                                     <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md ${sevLabel === 'Critical' ? 'bg-red-500 text-white' :
-                                            sevLabel === 'High' ? 'bg-brand-secondary text-white' : 'bg-brand-secondary/20 text-brand-secondary'
+                                        sevLabel === 'High' ? 'bg-brand-secondary text-white' : 'bg-brand-secondary/20 text-brand-secondary'
                                         }`}>
                                         {sevLabel}
                                     </span>
@@ -177,9 +178,12 @@ export const LiveIssuePanel: React.FC<LiveIssuePanelProps> = ({ issues, onAssign
                                     >
                                         <User className="w-3.5 h-3.5" /> Assign
                                     </button>
-                                    <button className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors">
+                                    <Link
+                                        to={`/admin/reports/${issue.id}`}
+                                        className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors"
+                                    >
                                         <Eye className="w-4 h-4" />
-                                    </button>
+                                    </Link>
                                     <button className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors">
                                         <GitMerge className="w-4 h-4" />
                                     </button>

@@ -27,27 +27,9 @@ const navItems: NavItem[] = [
         description: 'Track your submitted tickets',
     },
     {
-        label: 'Nearby Issues',
-        icon: <MapPin className="w-5 h-5" />,
-        path: '#nearby',
-        description: 'See what\'s happening around you',
-    },
-    {
-        label: 'Community Feed',
-        icon: <MessageSquare className="w-5 h-5" />,
-        path: '/reports',
-        description: 'Join civic conversations',
-    },
-    {
-        label: 'Rewards',
-        icon: <Trophy className="w-5 h-5" />,
-        path: '#rewards',
-        description: 'Earn civic tokens & badges',
-    },
-    {
         label: 'Announcements',
         icon: <Megaphone className="w-5 h-5" />,
-        path: '#announcements',
+        path: '/citizen/announcements',
         description: 'City updates & notices',
     },
     {
@@ -55,12 +37,6 @@ const navItems: NavItem[] = [
         icon: <ListChecks className="w-5 h-5" />,
         path: '#tasks',
         description: 'Quick civic actions near you',
-    },
-    {
-        label: 'Profile',
-        icon: <UserCircle className="w-5 h-5" />,
-        path: '#profile',
-        description: 'View your civic identity',
     },
 ];
 

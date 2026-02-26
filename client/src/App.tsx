@@ -12,11 +12,15 @@ import { connectSocket, disconnectSocket } from './services/socket';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { CitizenDashboard } from './pages/CitizenDashboard';
+import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { ReportIssue } from './pages/Report';
 import { AdminDashboard } from './pages/Admin';
 import { FieldWorker } from './pages/Worker';
 import { ReportsPage } from './pages/ReportsPage';
 import { ReportDetailPage } from './pages/ReportDetailPage';
+import { AdminReportsHub } from './pages/AdminReportsHub';
+import { AdminReportDetail } from './pages/AdminReportDetail';
+import { AdminOperations } from './pages/AdminOperations';
 
 const AnimatedRoutes = () => {
   const { user, profile, loading } = useAuth();
@@ -89,6 +93,16 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/citizen/announcements"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <AnnouncementsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
           path="/citizen/report"
           element={
             <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
@@ -135,11 +149,42 @@ const AnimatedRoutes = () => {
 
         {/* Admin */}
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <RoleProtectedRoute allowedRoles={['admin']}>
               <GlobalAnimationWrapper>
                 <AdminDashboard />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminReportsHub />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/reports/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminReportDetail />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/operations"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminOperations />
               </GlobalAnimationWrapper>
             </RoleProtectedRoute>
           }

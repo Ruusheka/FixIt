@@ -9,9 +9,12 @@ const auth_1 = require("../middleware/auth");
 const multer_1 = __importDefault(require("multer"));
 const router = express_1.default.Router();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
-// Make reporting public (anonymous allowed)
-router.post('/', upload.single('image'), issues_1.reportIssue);
+// Use optionalAuth to capture the citizen identity if logged in
+router.post('/', auth_1.optionalAuth, upload.single('image'), issues_1.reportIssue);
 router.post('/validate', upload.single('image'), issues_1.validateIssueImage);
 router.get('/', auth_1.requireAuth, issues_1.getIssues);
 router.patch('/:id/status', auth_1.requireAuth, issues_1.updateStatus);
+// New Workflow Routes
+router.post('/:id/proof', auth_1.requireAuth, upload.single('image'), issues_1.submitProof);
+router.post('/:id/verify', auth_1.requireAuth, issues_1.verifyIssue);
 exports.default = router;
