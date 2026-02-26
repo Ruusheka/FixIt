@@ -17,14 +17,22 @@ export const reportIssue = async (req: Request, res: Response) => {
         // AI Analysis
         const aiAnalysis = await analyzeIssueImage(imageFile.buffer, imageFile.mimetype);
 
+        if (!aiAnalysis.is_valid_civic_issue) {
+            return res.status(400).json({
+                error: 'Submission Rejected',
+                message: 'Image does not fall under any accepted civic categories (Infrastructure, Environment, Utilities, Traffic, or Civic Sense).'
+            });
+        }
+
         // Predictive Risk Score
-        // TODO: Fetch real weather/traffic data. For now, use mocks.
+        // Factors mapped from AI visual analysis
         const riskInput = {
-            historyReports: 5, // mock
-            rainfallForecast: 10, // mm, mock
-            trafficDensity: 0.8, // 0-1, mock
-            roadAge: 5, // years, mock
-            aiSeverity: aiAnalysis.severity
+            historyReports: 5, // mock: in prod this would query recent entries in Area
+            rainfallForecast: 10, // mock: openweather integration
+            trafficDensity: aiAnalysis.factors?.blockage_factor || 0.5,
+            roadAge: 5, // mock: asset tracking
+            aiSeverity: aiAnalysis.severity,
+            hazardLevel: aiAnalysis.factors?.hazard_level || 0.5
         };
 
         const predictiveRisk = calculateRiskScore(riskInput);
@@ -113,6 +121,28 @@ export const updateStatus = async (req: Request, res: Response) => {
         }
 
         res.json(data);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const validateIssueImage = async (req: Request, res: Response) => {
+    try {
+        const imageFile = req.file;
+        if (!imageFile) {
+            return res.status(400).json({ error: 'Image is required' });
+        }
+
+        const aiAnalysis = await analyzeIssueImage(imageFile.buffer, imageFile.mimetype);
+
+        if (!aiAnalysis.is_valid_civic_issue) {
+            return res.status(400).json({
+                error: 'Invalid Issue',
+                message: 'This image does not appear to contain a recognized civic issue (Infrastructure, Waste, Utilities, Traffic, or Civic Sense).'
+            });
+        }
+
+        res.json(aiAnalysis);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

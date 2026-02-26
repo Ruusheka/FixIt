@@ -15,7 +15,7 @@ create table public.issues (
   longitude float,
   image_url text,
   risk_score float default 0,
-  user_id uuid, -- Link to auth.users if authenticated, null if anonymous
+  user_id uuid references public.profiles(id), -- Link to profiles table
   address text
 );
 

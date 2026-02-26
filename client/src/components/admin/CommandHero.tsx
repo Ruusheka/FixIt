@@ -46,9 +46,9 @@ const AnimatedCounter: React.FC<{ value: number; suffix?: string; decimals?: num
 };
 
 const getCityStatus = (critical: number) => {
-    if (critical >= 5) return { label: 'Critical Zones Detected', color: 'text-red-400', bg: 'bg-red-500/20', dot: 'bg-red-500' };
-    if (critical >= 2) return { label: 'Moderate Load', color: 'text-orange-400', bg: 'bg-orange-500/20', dot: 'bg-orange-500' };
-    return { label: 'Stable', color: 'text-green-400', bg: 'bg-green-500/20', dot: 'bg-green-500' };
+    if (critical >= 5) return { label: 'Operational Warning', color: 'text-red-500', bg: 'bg-red-500/5', dot: 'bg-red-500' };
+    if (critical >= 2) return { label: 'Elevated Load', color: 'text-brand-secondary', bg: 'bg-brand-secondary/5', dot: 'bg-brand-secondary' };
+    return { label: 'System Stable', color: 'text-brand-secondary', bg: 'bg-brand-secondary/5', dot: 'bg-brand-secondary' };
 };
 
 export const CommandHero: React.FC<CommandHeroProps> = ({ stats: s }) => {
@@ -56,59 +56,80 @@ export const CommandHero: React.FC<CommandHeroProps> = ({ stats: s }) => {
     const status = getCityStatus(d.criticalZones);
 
     const statCards = [
-        { label: 'Active Issues', value: d.totalActive, icon: <AlertTriangle className="w-5 h-5" />, color: 'text-red-400', border: 'border-red-500/20' },
-        { label: 'Reported Today', value: d.reportedToday, icon: <Zap className="w-5 h-5" />, color: 'text-orange-400', border: 'border-orange-500/20' },
-        { label: 'Resolved Today', value: d.resolvedToday, icon: <CheckCircle2 className="w-5 h-5" />, color: 'text-green-400', border: 'border-green-500/20' },
-        { label: 'Avg Resolution', value: d.avgResolutionHrs, suffix: 'h', decimals: 1, icon: <Clock className="w-5 h-5" />, color: 'text-blue-400', border: 'border-blue-500/20' },
+        { label: 'Active Reports', value: d.totalActive, icon: <AlertTriangle className="w-4 h-4" />, color: 'text-brand-secondary' },
+        { label: 'Ingress Today', value: d.reportedToday, icon: <Zap className="w-4 h-4" />, color: 'text-brand-secondary' },
+        { label: 'Resolved', value: d.resolvedToday, icon: <CheckCircle2 className="w-4 h-4" />, color: 'text-brand-secondary' },
+        { label: 'Avg SLA', value: d.avgResolutionHrs, suffix: 'h', decimals: 1, icon: <Clock className="w-4 h-4" />, color: 'text-brand-secondary' },
     ];
 
     return (
-        <section className="mb-8">
+        <section className="mb-10">
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
+                    className="space-y-1"
                 >
-                    <div className="flex items-center gap-3 mb-1">
-                        <Shield className="w-7 h-7 text-civic-orange" />
-                        <h1 className="text-2xl md:text-3xl font-bold text-white">FixIt Command Center</h1>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-brand-secondary rounded-xl">
+                            <Shield className="w-6 h-6 text-brand-primary" />
+                        </div>
+                        <h1 className="text-3xl font-black tracking-tighter text-brand-secondary uppercase">
+                            Command Hub
+                        </h1>
                     </div>
-                    <p className="text-civic-muted text-sm ml-10">Real-time civic intelligence & operational control</p>
+                    <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12">
+                        Civic Intelligence & Tactical Operations
+                    </p>
                 </motion.div>
 
                 {/* City status indicator */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl ${status.bg} border border-white/5`}
+                    transition={{ delay: 0.2 }}
+                    className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl ${status.bg} border border-brand-secondary/10`}
                 >
-                    <span className={`w-2.5 h-2.5 rounded-full ${status.dot} animate-pulse`} />
-                    <span className={`text-sm font-semibold ${status.color}`}>{status.label}</span>
-                    <Activity className={`w-4 h-4 ${status.color}`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${status.dot} animate-pulse shadow-[0_0_10px_rgba(84,0,35,0.3)]`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${status.color}`}>{status.label}</span>
+                    <Activity className={`w-4 h-4 ${status.color} opacity-40`} />
                 </motion.div>
             </div>
 
             {/* Stat cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((card, i) => (
                     <motion.div
                         key={card.label}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 15 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
-                        className={`glass-card p-5 border-l-2 ${card.border}`}
+                        transition={{ delay: i * 0.05 }}
+                        className="minimal-card p-6 border-b border-brand-secondary/5 group hover:bg-brand-secondary transition-all cursor-default"
                     >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs text-civic-muted font-medium uppercase tracking-wider">{card.label}</span>
-                            <span className={card.color}>{card.icon}</span>
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] text-brand-secondary/40 font-black uppercase tracking-widest group-hover:text-brand-primary/40 transition-colors">
+                                {card.label}
+                            </span>
+                            <div className="p-1.5 rounded-lg bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-all">
+                                {card.icon}
+                            </div>
                         </div>
-                        <div className="text-3xl font-bold text-white">
+                        <div className="text-4xl font-black text-brand-secondary group-hover:text-brand-primary tracking-tighter transition-colors">
                             <AnimatedCounter value={card.value} suffix={card.suffix} decimals={card.decimals} />
                         </div>
-                        <div className="flex items-center gap-1 mt-1 text-xs text-civic-muted">
-                            <TrendingUp className="w-3 h-3 text-green-400" />
-                            <span>vs yesterday</span>
+                        <div className="flex items-center gap-1.5 mt-2 overflow-hidden">
+                            <div className="h-0.5 w-full bg-brand-secondary/5 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-brand-secondary group-hover:bg-brand-primary"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '65%' }}
+                                    transition={{ duration: 1.5, delay: 0.5 }}
+                                />
+                            </div>
+                            <span className="text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/30 whitespace-nowrap">
+                                +12%
+                            </span>
                         </div>
                     </motion.div>
                 ))}

@@ -9,9 +9,8 @@ const calculateRiskScore = (input) => {
     const T = input.trafficDensity; // Already 0-1
     const A = Math.min(input.roadAge / 20, 1); // Cap at 20 years
     // Base formula
-    let risk = (H * 0.4) + (W * 0.3) + (T * 0.2) + (A * 0.1);
+    let risk = (H * 0.3) + (W * 0.2) + (T * 0.2) + (A * 0.1) + (input.hazardLevel * 0.2);
     // Factor in AI Severity (Heavy weighting)
-    // If AI says it's critical (severity > 8), boost risk
     const severityFactor = input.aiSeverity / 10;
     // Average with severity
     risk = (risk + severityFactor) / 2;

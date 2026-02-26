@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
-// import { MapPin, Camera, Navigation, CheckCircle } from 'lucide-react';
-import { MapPin, Camera, Navigation, CheckCircle } from 'lucide-react';
+import { MapPin, Navigation, CheckCircle, ListChecks, History, Map } from 'lucide-react';
 import { socket } from '../services/socket';
+import { MinimalLayout } from '../components/MinimalLayout';
+import { motion } from 'framer-motion';
 
-// export const FieldWorker...
+const navItems = [
+    { label: 'My Tasks', path: '/worker', icon: ListChecks },
+    { label: 'Reports Hub', path: '/reports', icon: History },
+    { label: 'Map View', path: '/worker#map', icon: Map },
+];
 
 export const FieldWorker: React.FC = () => {
     const [tasks, setTasks] = useState<any[]>([]);
 
     useEffect(() => {
-        // Mock: fetch tasks assigned to current user or department
-        // For demo, fetch all 'in_progress' issues
         fetchIssues();
 
         socket.on('new_issue', (issue: any) => {
@@ -22,14 +25,12 @@ export const FieldWorker: React.FC = () => {
 
         socket.on('issue_updated', (updatedIssue: any) => {
             if (updatedIssue.status === 'in_progress') {
-                // Add if not exists, update if exists
                 setTasks(prev => {
                     const exists = prev.find(t => t.id === updatedIssue.id);
                     if (exists) return prev.map(t => t.id === updatedIssue.id ? updatedIssue : t);
                     return [updatedIssue, ...prev];
                 });
             } else {
-                // Remove if no longer in progress
                 setTasks(prev => prev.filter(t => t.id !== updatedIssue.id));
             }
         });
@@ -50,61 +51,81 @@ export const FieldWorker: React.FC = () => {
     };
 
     const markResolved = async (id: string) => {
-        // In real app, upload "after" photo here
         await supabase.from('issues').update({ status: 'resolved' }).eq('id', id);
         fetchIssues();
     };
 
     return (
-        <div className="p-4 pb-20 max-w-md mx-auto bg-slate-50 min-h-screen">
-            <h1 className="text-2xl font-bold mb-6 text-slate-900">My Tasks</h1>
-
-            <div className="space-y-4">
-                {tasks.length === 0 && (
-                    <div className="text-center text-slate-500 mt-10">
-                        <CheckCircle className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-                        <p>No active tasks assigned.</p>
+        <MinimalLayout navItems={navItems} title="Worker Panel">
+            <div className="max-w-4xl">
+                <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-2xl font-bold tracking-tight">Active Assignments</h3>
+                    <div className="bg-brand-secondary/5 px-4 py-1.5 rounded-full border border-brand-secondary/10">
+                        <span className="text-sm font-bold">{tasks.length} Pending</span>
                     </div>
-                )}
+                </div>
 
-                {tasks.map(task => (
-                    <div key={task.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                        <div className="flex justify-between items-start mb-3">
-                            <div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded ${task.severity > 7 ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                                    }`}>
-                                    Priority {task.severity}/10
-                                </span>
-                                <h3 className="font-bold text-lg mt-2 capitalize">{task.category}</h3>
-                            </div>
-                            {task.image_url && (
-                                <img src={task.image_url} className="w-16 h-16 rounded-lg object-cover bg-slate-100" />
-                            )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {tasks.length === 0 ? (
+                        <div className="col-span-full minimal-card p-20 text-center border-dashed border-2 bg-transparent">
+                            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-brand-secondary/10" />
+                            <p className="text-brand-secondary/50 font-medium text-lg">All caught up! No active tasks.</p>
                         </div>
-
-                        <p className="text-slate-500 text-sm mb-4 line-clamp-2">{task.description}</p>
-
-                        <div className="flex items-center text-sm text-slate-500 mb-4">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            <span className="truncate">{task.address || 'Location Coordinates'}</span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <button className="flex items-center justify-center gap-2 py-2 px-4 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200">
-                                <Navigation className="w-4 h-4" />
-                                Navigate
-                            </button>
-                            <button
-                                onClick={() => markResolved(task.id)}
-                                className="flex items-center justify-center gap-2 py-2 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 shadow-sm"
+                    ) : (
+                        tasks.map((task, i) => (
+                            <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="minimal-card p-6 flex flex-col h-full bg-white overflow-hidden"
                             >
-                                <CheckCircle className="w-4 h-4" />
-                                Mark Done
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex flex-col gap-2">
+                                        <span className={`badge-tonal w-fit ${task.severity > 7 ? 'bg-brand-secondary/10 text-brand-secondary' : 'bg-brand-secondary/5 text-brand-secondary'
+                                            }`}>
+                                            Priority {task.severity}/10
+                                        </span>
+                                        <h4 className="font-bold text-xl capitalize">{task.category}</h4>
+                                    </div>
+                                    {task.image_url && (
+                                        <img
+                                            src={task.image_url}
+                                            alt="Issue"
+                                            className="w-20 h-20 rounded-2xl object-cover border border-brand-secondary/5"
+                                        />
+                                    )}
+                                </div>
+
+                                <p className="text-brand-secondary/60 text-sm mb-6 line-clamp-3">
+                                    {task.description || 'No description provided.'}
+                                </p>
+
+                                <div className="mt-auto space-y-6">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-brand-secondary/40">
+                                        <MapPin size={16} />
+                                        <span className="truncate">{task.address || 'Location Details'}</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-brand-secondary/5">
+                                        <button className="btn-secondary h-12 flex items-center justify-center gap-2 text-sm">
+                                            <Navigation size={18} />
+                                            Route
+                                        </button>
+                                        <button
+                                            onClick={() => markResolved(task.id)}
+                                            className="btn-primary h-12 flex items-center justify-center gap-2 text-sm"
+                                        >
+                                            <CheckCircle size={18} />
+                                            Complete
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))
+                    )}
+                </div>
             </div>
-        </div>
+        </MinimalLayout>
     );
 };

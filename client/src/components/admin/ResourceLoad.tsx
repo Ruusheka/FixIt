@@ -11,65 +11,83 @@ const departmentData = [
 ];
 
 const tooltipStyle = {
-    backgroundColor: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '8px',
-    color: '#e2e8f0',
-    fontSize: '12px',
+    backgroundColor: '#540023',
+    border: 'none',
+    borderRadius: '12px',
+    color: '#CCCFBA',
+    fontSize: '10px',
+    fontWeight: '900',
+    textTransform: 'uppercase' as const,
+    boxShadow: '0 10px 25px -5px rgba(84,0,35,0.3)',
 };
 
 export const ResourceLoad: React.FC = () => (
-    <section className="mb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-            <h2 className="text-xl font-bold text-white mb-1">Resource Load</h2>
-            <p className="text-civic-muted text-sm">Department workload & workforce planning</p>
+    <section className="mb-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-brand-secondary rounded-xl">
+                    <Users className="w-6 h-6 text-brand-primary" />
+                </div>
+                <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase">Resource Allocation</h2>
+            </div>
+            <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12 mt-1">Workload density & workforce utility planning</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Chart */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="glass-card p-5"
+                className="minimal-card p-10 bg-white"
             >
-                <h3 className="text-sm font-semibold text-white mb-4">Active Jobs by Department</h3>
-                <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={departmentData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} />
-                        <YAxis type="category" dataKey="dept" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} width={80} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Bar dataKey="active" fill="#f97316" radius={[0, 4, 4, 0]} name="Active Jobs" />
-                        <Bar dataKey="workers" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Workers" />
+                <h3 className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-[0.2em] mb-8">Active Operations Index</h3>
+                <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={departmentData} layout="vertical" margin={{ left: -10, right: 20 }}>
+                        <CartesianGrid strokeDasharray="8 8" stroke="#54002308" horizontal={false} />
+                        <XAxis type="number" hide />
+                        <YAxis
+                            type="category"
+                            dataKey="dept"
+                            tick={{ fill: '#540023', fontSize: 10, fontWeight: 900 }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={80}
+                        />
+                        <Tooltip
+                            contentStyle={tooltipStyle}
+                            cursor={{ fill: '#54002305' }}
+                        />
+                        <Bar dataKey="active" fill="#540023" radius={[0, 12, 12, 0]} barSize={32} name="Active Jobs" />
+                        <Bar dataKey="workers" fill="#CCCFBA" radius={[0, 12, 12, 0]} barSize={32} name="Workers" />
                     </BarChart>
                 </ResponsiveContainer>
             </motion.div>
 
             {/* Department cards */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
                 {departmentData.map((dept, i) => (
                     <motion.div
                         key={dept.dept}
                         initial={{ opacity: 0, y: 15 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ delay: i * 0.08 }}
-                        className="glass-card p-4"
+                        transition={{ delay: i * 0.05 }}
+                        className="minimal-card p-6 bg-white border border-brand-secondary/5 group hover:bg-brand-secondary transition-all cursor-default"
                     >
-                        <h4 className="text-sm font-semibold text-white mb-3">{dept.dept}</h4>
-                        <div className="space-y-2 text-xs">
+                        <h4 className="text-xs font-black text-brand-secondary group-hover:text-brand-primary uppercase tracking-widest mb-4 transition-colors">{dept.dept}</h4>
+                        <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1 text-civic-muted"><Briefcase className="w-3 h-3" /> Active</span>
-                                <span className="font-bold text-white">{dept.active}</span>
+                                <span className="flex items-center gap-2 text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest"><Briefcase className="w-3 h-3" /> In-Flight</span>
+                                <span className="text-sm font-black text-brand-secondary group-hover:text-brand-primary">{dept.active}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1 text-civic-muted"><Users className="w-3 h-3" /> Workers</span>
-                                <span className="font-bold text-white">{dept.workers}</span>
+                                <span className="flex items-center gap-2 text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest"><Users className="w-3 h-3" /> Assigned</span>
+                                <span className="text-sm font-black text-brand-secondary group-hover:text-brand-primary">{dept.workers}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-1 text-civic-muted"><AlertTriangle className="w-3 h-3" /> Breaches</span>
-                                <span className={`font-bold ${dept.breaches > 0 ? 'text-red-400' : 'text-green-400'}`}>{dept.breaches}</span>
+                                <span className="flex items-center gap-2 text-[9px] font-bold text-brand-secondary/30 group-hover:text-brand-primary/40 uppercase tracking-widest"><AlertTriangle className="w-3 h-3" /> Variance</span>
+                                <span className={`text-sm font-black transition-colors ${dept.breaches > 0 ? 'text-red-500 group-hover:text-brand-primary' : 'text-brand-secondary group-hover:text-brand-primary opacity-40'}`}>{dept.breaches}</span>
                             </div>
                         </div>
                     </motion.div>

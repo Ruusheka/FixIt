@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, RotateCcw, ImageIcon } from 'lucide-react';
+import { CheckCircle, XCircle, RotateCcw, ImageIcon, User } from 'lucide-react';
 
 interface VerificationItem {
     id: string;
@@ -26,63 +26,83 @@ const demoVerifications: VerificationItem[] = [
 ];
 
 export const VerificationPanel: React.FC<VerificationPanelProps> = ({ onApprove, onReject, onRework }) => (
-    <section className="mb-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-            <h2 className="text-xl font-bold text-white mb-1">Field Work Verification</h2>
-            <p className="text-civic-muted text-sm">Review worker submissions before closing tickets</p>
+    <section className="mb-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-brand-secondary rounded-xl">
+                    <CheckCircle className="w-6 h-6 text-brand-primary" />
+                </div>
+                <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase">Field Validation</h2>
+            </div>
+            <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest ml-12 mt-1">Operational protocol audit & worker submission review</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {demoVerifications.map((item, i) => (
                 <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.08 }}
-                    className="glass-card overflow-hidden"
+                    transition={{ delay: i * 0.05 }}
+                    className="minimal-card overflow-hidden bg-white shadow-soft group hover:border-brand-secondary/10 transition-all"
                 >
                     {/* Before / After */}
-                    <div className="grid grid-cols-2 h-28">
-                        <div className="bg-civic-card flex flex-col items-center justify-center border-r border-white/5 relative">
-                            <ImageIcon className="w-5 h-5 text-civic-muted/30" />
-                            <span className="absolute bottom-1 text-[9px] text-civic-muted">BEFORE</span>
+                    <div className="grid grid-cols-2 h-32 bg-brand-secondary/5 relative">
+                        <div className="flex flex-col items-center justify-center border-r border-brand-secondary/5 relative group/img cursor-zoom-in">
+                            <ImageIcon className="w-6 h-6 text-brand-secondary/10 group-hover/img:text-brand-secondary/30 transition-colors" />
+                            <span className="absolute bottom-2 text-[8px] font-black text-brand-secondary/20 uppercase tracking-[0.2em]">Initial State</span>
                         </div>
-                        <div className="bg-civic-card flex flex-col items-center justify-center relative">
-                            <ImageIcon className="w-5 h-5 text-green-400/30" />
-                            <span className="absolute bottom-1 text-[9px] text-civic-muted">AFTER</span>
+                        <div className="flex flex-col items-center justify-center relative group/img cursor-zoom-in">
+                            <ImageIcon className="w-6 h-6 text-brand-secondary/10 group-hover/img:text-brand-secondary/30 transition-colors" />
+                            <span className="absolute bottom-2 text-[8px] font-black text-brand-secondary/20 uppercase tracking-[0.2em]">Resolved Node</span>
+                        </div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white border border-brand-secondary/5 flex items-center justify-center z-10 shadow-sm">
+                            <RotateCcw className="w-3.5 h-3.5 text-brand-secondary/20" />
                         </div>
                     </div>
 
                     {/* Info */}
-                    <div className="p-3 space-y-2">
+                    <div className="p-6 space-y-4">
                         <div className="flex items-center justify-between">
-                            <span className="text-civic-orange text-xs font-mono font-bold">{item.ticket_id}</span>
-                            <span className="text-[10px] text-civic-muted">{new Date(item.submitted_at).toLocaleDateString()}</span>
+                            <span className="text-brand-secondary font-black text-[10px] uppercase tracking-widest">{item.ticket_id}</span>
+                            <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-widest">{new Date(item.submitted_at).toLocaleDateString()}</span>
                         </div>
-                        <h4 className="text-sm font-semibold text-white capitalize">{item.category}</h4>
-                        <p className="text-xs text-civic-muted">Worker: {item.worker}</p>
-                        <p className="text-xs text-civic-muted italic">"{item.notes}"</p>
+
+                        <div>
+                            <h4 className="text-lg font-black text-brand-secondary capitalize tracking-tight leading-tight">{item.category}</h4>
+                            <div className="flex items-center gap-2 mt-2 text-[10px] font-bold text-brand-secondary/40 uppercase tracking-widest">
+                                <User className="w-3.5 h-3.5" />
+                                <span>Worker: {item.worker}</span>
+                            </div>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-brand-secondary/[0.02] border border-brand-secondary/5">
+                            <p className="text-[11px] text-brand-secondary/60 leading-relaxed font-medium">"{item.notes}"</p>
+                        </div>
 
                         {/* Actions */}
-                        <div className="grid grid-cols-3 gap-2 pt-1">
+                        <div className="grid grid-cols-3 gap-2 pt-2">
                             <button
                                 onClick={() => onApprove(item.id)}
-                                className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold text-green-400 glass-card hover:bg-green-500/10 transition-colors"
+                                title="Approve Task"
+                                className="flex items-center justify-center p-3 text-brand-secondary hover:bg-brand-secondary hover:text-white bg-brand-secondary/5 rounded-xl transition-all"
                             >
-                                <CheckCircle className="w-3 h-3" /> Approve
-                            </button>
-                            <button
-                                onClick={() => onReject(item.id)}
-                                className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold text-red-400 glass-card hover:bg-red-500/10 transition-colors"
-                            >
-                                <XCircle className="w-3 h-3" /> Reject
+                                <CheckCircle className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => onRework(item.id)}
-                                className="flex items-center justify-center gap-1 py-1.5 text-[10px] font-semibold text-orange-400 glass-card hover:bg-orange-500/10 transition-colors"
+                                title="Request Rework"
+                                className="flex items-center justify-center p-3 text-brand-secondary/40 hover:bg-brand-secondary hover:text-white bg-brand-secondary/5 rounded-xl transition-all"
                             >
-                                <RotateCcw className="w-3 h-3" /> Rework
+                                <RotateCcw className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => onReject(item.id)}
+                                title="Reject Submission"
+                                className="flex items-center justify-center p-3 text-brand-secondary/40 hover:bg-brand-secondary hover:text-white bg-brand-secondary/5 rounded-xl transition-all"
+                            >
+                                <XCircle className="w-5 h-5" />
                             </button>
                         </div>
                     </div>

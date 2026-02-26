@@ -3,86 +3,65 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     Camera, FileText, MapPin, MessageSquare,
-    Trophy, Megaphone, ListChecks, UserCircle
+    Megaphone, ListChecks
 } from 'lucide-react';
 
 interface NavItem {
     label: string;
     icon: React.ReactNode;
     path: string;
-    gradient: string;
     description: string;
 }
 
 const navItems: NavItem[] = [
     {
         label: 'Report Issue',
-        icon: <Camera className="w-6 h-6" />,
+        icon: <Camera className="w-5 h-5" />,
         path: '/citizen/report',
-        gradient: 'from-orange-500/20 to-red-500/20',
         description: 'Snap & submit civic issues',
     },
     {
         label: 'My Reports',
-        icon: <FileText className="w-6 h-6" />,
-        path: '#my-reports',
-        gradient: 'from-blue-500/20 to-cyan-500/20',
+        icon: <FileText className="w-5 h-5" />,
+        path: '/my-reports',
         description: 'Track your submitted tickets',
     },
     {
         label: 'Nearby Issues',
-        icon: <MapPin className="w-6 h-6" />,
-        path: '#nearby',
-        gradient: 'from-green-500/20 to-emerald-500/20',
+        icon: <MapPin className="w-5 h-5" />,
+        path: '/reports',                          // ← changed from '#nearby'
         description: 'See what\'s happening around you',
     },
     {
         label: 'Community Feed',
-        icon: <MessageSquare className="w-6 h-6" />,
-        path: '#community',
-        gradient: 'from-purple-500/20 to-pink-500/20',
+        icon: <MessageSquare className="w-5 h-5" />,
+        path: '/community',               // ← updated
         description: 'Join civic conversations',
     },
     {
-        label: 'Rewards',
-        icon: <Trophy className="w-6 h-6" />,
-        path: '#rewards',
-        gradient: 'from-yellow-500/20 to-orange-500/20',
-        description: 'Earn civic tokens & badges',
-    },
-    {
         label: 'Announcements',
-        icon: <Megaphone className="w-6 h-6" />,
-        path: '#announcements',
-        gradient: 'from-cyan-500/20 to-blue-500/20',
+        icon: <Megaphone className="w-5 h-5" />,
+        path: '/announcements',           // ← updated
         description: 'City updates & notices',
     },
     {
         label: 'Micro-Tasks',
-        icon: <ListChecks className="w-6 h-6" />,
+        icon: <ListChecks className="w-5 h-5" />,
         path: '#tasks',
-        gradient: 'from-emerald-500/20 to-teal-500/20',
         description: 'Quick civic actions near you',
-    },
-    {
-        label: 'Profile',
-        icon: <UserCircle className="w-6 h-6" />,
-        path: '#profile',
-        gradient: 'from-slate-500/20 to-zinc-500/20',
-        description: 'View your civic identity',
     },
 ];
 
 const container = {
     hidden: {},
     show: {
-        transition: { staggerChildren: 0.06 },
+        transition: { staggerChildren: 0.04 },
     },
 };
 
 const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
 export const NavigationGrid: React.FC = () => {
@@ -98,15 +77,15 @@ export const NavigationGrid: React.FC = () => {
     };
 
     return (
-        <section className="px-6 md:px-12 lg:px-20 py-16">
+        <section className="py-12">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="mb-8"
+                className="mb-10 text-center md:text-left"
             >
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Quick Actions</h2>
-                <p className="text-civic-muted text-sm">Everything you need, one click away</p>
+                <h2 className="text-3xl font-bold tracking-tight mb-2">Service Hub</h2>
+                <p className="text-brand-secondary/40 font-medium">Streamlined access to all civic infrastructure tools.</p>
             </motion.div>
 
             <motion.div
@@ -120,18 +99,22 @@ export const NavigationGrid: React.FC = () => {
                     <motion.button
                         key={nav.label}
                         variants={item}
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ y: -5 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => handleClick(nav.path)}
-                        className={`glass-card-hover p-5 text-left group cursor-pointer bg-gradient-to-br ${nav.gradient}`}
+                        className="minimal-card p-6 text-left group hover:bg-brand-secondary transition-all duration-300"
                     >
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="p-2 rounded-lg bg-white/10 text-white group-hover:bg-white/15 transition-colors">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2.5 rounded-xl bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-primary group-hover:text-brand-secondary transition-all">
                                 {nav.icon}
                             </div>
                         </div>
-                        <h3 className="font-semibold text-white text-sm mb-1">{nav.label}</h3>
-                        <p className="text-xs text-civic-muted leading-relaxed">{nav.description}</p>
+                        <h3 className="font-bold text-brand-secondary group-hover:text-brand-primary text-sm mb-1 tracking-tight transition-colors">
+                            {nav.label}
+                        </h3>
+                        <p className="text-[10px] uppercase font-black tracking-widest text-brand-secondary/30 group-hover:text-brand-primary/40 transition-colors">
+                            {nav.description}
+                        </p>
                     </motion.button>
                 ))}
             </motion.div>

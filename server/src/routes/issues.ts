@@ -1,5 +1,5 @@
 import express from 'express';
-import { reportIssue, getIssues, updateStatus } from '../controllers/issues';
+import { reportIssue, getIssues, updateStatus, validateIssueImage } from '../controllers/issues';
 import { requireAuth } from '../middleware/auth';
 import multer from 'multer';
 
@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Make reporting public (anonymous allowed)
 router.post('/', upload.single('image'), reportIssue);
+router.post('/validate', upload.single('image'), validateIssueImage);
 router.get('/', requireAuth, getIssues);
 router.patch('/:id/status', requireAuth, updateStatus);
 

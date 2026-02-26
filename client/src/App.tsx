@@ -1,9 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { RoleProtectedRoute } from './components/RoleProtectedRoute';
+import { GlobalAnimationWrapper } from './components/GlobalAnimationWrapper';
 import { connectSocket, disconnectSocket } from './services/socket';
 
 // Pages
@@ -13,9 +15,16 @@ import { CitizenDashboard } from './pages/CitizenDashboard';
 import { ReportIssue } from './pages/Report';
 import { AdminDashboard } from './pages/Admin';
 import { FieldWorker } from './pages/Worker';
+import { ReportsPage } from './pages/ReportsPage';
+import { ReportDetailPage } from './pages/ReportDetailPage';
+import { RewardsPage } from './pages/RewardsPage';
+import { AnnouncementsPage } from './pages/AnnouncementsPage';
+import { MyReportsPage } from './pages/MyReportsPage';
+import { ProfilePage } from './pages/ProfilePage';
 
-const AppRoutes = () => {
+const AnimatedRoutes = () => {
   const { user, profile, loading } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (user) {
@@ -28,10 +37,10 @@ const AppRoutes = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-civic-dark">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-civic-orange border-t-transparent rounded-full animate-spin" />
-          <div className="text-sm font-medium text-civic-muted">Loading FixIt...</div>
+      <div className="flex items-center justify-center min-h-screen bg-brand-primary">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-brand-secondary/10 border-t-brand-secondary rounded-full animate-spin" />
+          <div className="text-sm font-bold tracking-widest text-brand-secondary/40 uppercase">Initialising FixIt</div>
         </div>
       </div>
     );
@@ -48,53 +57,160 @@ const AppRoutes = () => {
   };
 
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={!user ? <Login /> : <Navigate to={getDashboardPath()} replace />} />
-      <Route path="/signup" element={!user ? <Signup /> : <Navigate to={getDashboardPath()} replace />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {/* Public */}
+        <Route
+          path="/login"
+          element={
+            !user ? (
+              <GlobalAnimationWrapper>
+                <Login />
+              </GlobalAnimationWrapper>
+            ) : <Navigate to={getDashboardPath()} replace />
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            !user ? (
+              <GlobalAnimationWrapper>
+                <Signup />
+              </GlobalAnimationWrapper>
+            ) : <Navigate to={getDashboardPath()} replace />
+          }
+        />
 
-      {/* Citizen */}
-      <Route
-        path="/citizen"
-        element={
-          <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-            <CitizenDashboard />
-          </RoleProtectedRoute>
-        }
-      />
-      <Route
-        path="/citizen/report"
-        element={
-          <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-            <ReportIssue />
-          </RoleProtectedRoute>
-        }
-      />
+        {/* Citizen */}
+        <Route
+          path="/citizen"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <CitizenDashboard />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/report"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ReportIssue />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
 
-      {/* Worker */}
-      <Route
-        path="/worker"
-        element={
-          <RoleProtectedRoute allowedRoles={['worker', 'admin']}>
-            <FieldWorker />
-          </RoleProtectedRoute>
-        }
-      />
+        {/* Reports Hub */}
+        <Route
+          path="/reports"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ReportsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ReportDetailPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
 
-      {/* Admin */}
-      <Route
-        path="/admin"
-        element={
-          <RoleProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </RoleProtectedRoute>
-        }
-      />
+        {/* My Reports — user's own submitted issues with TicketTracker */}
+        <Route
+          path="/my-reports"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <MyReportsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
 
-      {/* Default */}
-      <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />
-      <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
-    </Routes>
+        {/* Community Feed → reuses ReportsPage (same content as before) */}
+        <Route
+          path="/community"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ReportsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        {/* Rewards & Announcements */}
+        <Route
+          path="/rewards"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <RewardsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/announcements"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <AnnouncementsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Profile — Civic Identity Dashboard */}
+        <Route
+          path="/profile"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ProfilePage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Worker */}
+        <Route
+          path="/worker"
+          element={
+            <RoleProtectedRoute allowedRoles={['worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <FieldWorker />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Admin */}
+        <Route
+          path="/admin"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminDashboard />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+
+        {/* Default */}
+        <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />
+        <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
+      </Routes>
+    </AnimatePresence>
   );
 };
 
@@ -102,7 +218,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <AnimatedRoutes />
       </AuthProvider>
     </Router>
   );

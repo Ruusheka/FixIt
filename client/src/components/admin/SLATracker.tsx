@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, AlertTriangle, CheckCircle2, User } from 'lucide-react';
+import { Clock, User } from 'lucide-react';
 
 interface SLATicket {
     id: string;
@@ -22,11 +22,11 @@ const getSLAInfo = (createdAt: string, deadline?: string) => {
     const end = deadline ? new Date(deadline).getTime() : new Date(createdAt).getTime() + 86400000; // 24h default
     const remaining = end - now;
 
-    if (remaining <= 0) return { label: 'Overdue', color: 'text-red-400', bg: 'bg-red-500/20', pct: 100 };
+    if (remaining <= 0) return { label: 'Overdue', color: 'text-red-600', bg: 'bg-red-500/5', pct: 100 };
     const totalMs = end - new Date(createdAt).getTime();
     const pct = ((totalMs - remaining) / totalMs) * 100;
-    if (pct > 75) return { label: formatTime(remaining), color: 'text-orange-400', bg: 'bg-orange-500/20', pct };
-    return { label: formatTime(remaining), color: 'text-green-400', bg: 'bg-green-500/20', pct };
+    if (pct > 75) return { label: formatTime(remaining), color: 'text-brand-secondary', bg: 'bg-brand-secondary/5', pct };
+    return { label: formatTime(remaining), color: 'text-brand-secondary', bg: 'bg-brand-secondary/5', pct };
 };
 
 const formatTime = (ms: number): string => {
@@ -46,7 +46,6 @@ const demoSLA: SLATicket[] = [
 
 export const SLATracker: React.FC<SLATrackerProps> = ({ issues }) => {
     const [, setTick] = useState(0);
-    // Re-render every minute for countdown
     useEffect(() => {
         const interval = setInterval(() => setTick(t => t + 1), 60000);
         return () => clearInterval(interval);
@@ -61,54 +60,55 @@ export const SLATracker: React.FC<SLATrackerProps> = ({ issues }) => {
         : demoSLA;
 
     return (
-        <section className="mb-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-1">SLA Performance</h2>
-                <p className="text-civic-muted text-sm">24-hour resolution compliance tracker</p>
+        <section className="mb-12">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8">
+                <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Operational Latency</h2>
+                <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest">SLA Compliance Pipeline</p>
             </motion.div>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="glass-card overflow-hidden"
+                className="minimal-card overflow-hidden bg-white shadow-soft"
             >
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b border-white/5">
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">Ticket</th>
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">Type</th>
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">Location</th>
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">Worker</th>
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">Time Left</th>
-                                <th className="px-4 py-3 text-[11px] font-semibold text-civic-muted uppercase tracking-wider">SLA</th>
+                            <tr className="border-b border-brand-secondary/5 bg-brand-secondary/[0.02]">
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Identifier</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Type</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Designation</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Operative</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Delta</th>
+                                <th className="px-6 py-4 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-brand-secondary/5">
                             {tickets.slice(0, 8).map((t) => {
                                 const sla = getSLAInfo(t.created_at, t.sla_deadline);
                                 return (
-                                    <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
-                                        <td className="px-4 py-3 text-civic-orange font-mono text-xs font-bold">{t.ticket_id}</td>
-                                        <td className="px-4 py-3 text-sm text-white capitalize">{t.category}</td>
-                                        <td className="px-4 py-3 text-xs text-civic-muted truncate max-w-[150px]">{t.address || '--'}</td>
-                                        <td className="px-4 py-3">
-                                            <span className="flex items-center gap-1 text-xs text-civic-muted">
-                                                <User className="w-3 h-3" />{t.assigned_worker}
+                                    <tr key={t.id} className="hover:bg-brand-secondary/[0.01] transition-colors group">
+                                        <td className="px-6 py-4 text-brand-secondary font-black text-xs">{t.ticket_id}</td>
+                                        <td className="px-6 py-4 text-xs font-bold text-brand-secondary/60 capitalize">{t.category}</td>
+                                        <td className="px-6 py-4 text-[11px] font-medium text-brand-secondary/40 truncate max-w-[150px]">{t.address || '--'}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="flex items-center gap-2 text-xs font-bold text-brand-secondary/60">
+                                                <User className="w-3.5 h-3.5 opacity-30" />{t.assigned_worker}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`flex items-center gap-1 text-xs font-semibold ${sla.color}`}>
-                                                <Clock className="w-3 h-3" />{sla.label}
+                                        <td className="px-6 py-4">
+                                            <span className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-tighter ${sla.color}`}>
+                                                <Clock className="w-3.5 h-3.5" />{sla.label}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <div className="w-16 h-1.5 bg-civic-border rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full transition-all ${sla.pct >= 100 ? 'bg-red-500' : sla.pct > 75 ? 'bg-orange-500' : 'bg-green-500'
-                                                        }`}
-                                                    style={{ width: `${Math.min(sla.pct, 100)}%` }}
+                                        <td className="px-6 py-4">
+                                            <div className="w-20 h-1 bg-brand-secondary/5 rounded-full overflow-hidden">
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: `${Math.min(sla.pct, 100)}%` }}
+                                                    transition={{ duration: 1, ease: "circOut" }}
+                                                    className={`h-full rounded-full ${sla.pct >= 100 ? 'bg-red-500' : 'bg-brand-secondary'}`}
                                                 />
                                             </div>
                                         </td>

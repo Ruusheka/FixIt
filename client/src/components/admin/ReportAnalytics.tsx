@@ -24,50 +24,52 @@ const monthlyData = [
 ];
 
 const statusDistribution = [
-    { name: 'Reported', value: 35, color: '#6b7280' },
-    { name: 'In Progress', value: 25, color: '#f97316' },
-    { name: 'Assigned', value: 15, color: '#3b82f6' },
-    { name: 'Resolved', value: 20, color: '#22c55e' },
-    { name: 'Verified', value: 5, color: '#a855f7' },
+    { name: 'Reported', value: 35, color: '#54002344' },
+    { name: 'In Progress', value: 25, color: '#54002388' },
+    { name: 'Assigned', value: 15, color: '#540023BB' },
+    { name: 'Resolved', value: 20, color: '#540023' },
+    { name: 'Verified', value: 5, color: '#000000' },
 ];
 
 const tooltipStyle = {
-    backgroundColor: '#111827',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '8px',
-    color: '#e2e8f0',
-    fontSize: '12px',
+    backgroundColor: '#ffffff',
+    border: '1px solid rgba(84,0,35,0.05)',
+    borderRadius: '12px',
+    color: '#540023',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
 };
 
 export const ReportAnalytics: React.FC = () => (
-    <section className="mb-8">
+    <section className="mb-12">
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-6"
+            className="mb-8"
         >
-            <h2 className="text-xl font-bold text-white mb-1">Report Analytics</h2>
-            <p className="text-civic-muted text-sm">Reporting trends & status distribution</p>
+            <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Analytical Ingress</h2>
+            <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest">Multi-vector temporal analysis</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Weekly Bar Chart */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="glass-card p-5"
+                className="minimal-card p-6 bg-white"
             >
-                <h3 className="text-sm font-semibold text-white mb-4">This Week</h3>
-                <ResponsiveContainer width="100%" height={200}>
+                <h3 className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest mb-6 border-b border-brand-secondary/5 pb-4">Weekly Velocity</h3>
+                <ResponsiveContainer width="100%" height={250}>
                     <BarChart data={weeklyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="day" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} />
-                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} />
-                        <Tooltip contentStyle={tooltipStyle} />
-                        <Bar dataKey="reports" fill="#f97316" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="resolved" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                        <CartesianGrid strokeDasharray="2 2" stroke="rgba(84,0,35,0.03)" vertical={false} />
+                        <XAxis dataKey="day" tick={{ fill: '#540023', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#54002366', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(84,0,35,0.02)' }} />
+                        <Bar dataKey="reports" fill="#540023" radius={[2, 2, 0, 0]} barSize={12} />
+                        <Bar dataKey="resolved" fill="#54002333" radius={[2, 2, 0, 0]} barSize={12} />
                     </BarChart>
                 </ResponsiveContainer>
             </motion.div>
@@ -78,16 +80,16 @@ export const ReportAnalytics: React.FC = () => (
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.1 }}
-                className="glass-card p-5"
+                className="minimal-card p-6 bg-white"
             >
-                <h3 className="text-sm font-semibold text-white mb-4">Monthly Growth</h3>
-                <ResponsiveContainer width="100%" height={200}>
+                <h3 className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest mb-6 border-b border-brand-secondary/5 pb-4">Long-term Growth</h3>
+                <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="month" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} />
-                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} />
+                        <CartesianGrid strokeDasharray="2 2" stroke="rgba(84,0,35,0.03)" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fill: '#540023', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#54002366', fontSize: 10 }} axisLine={false} tickLine={false} />
                         <Tooltip contentStyle={tooltipStyle} />
-                        <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4 }} />
+                        <Line type="monotone" dataKey="total" stroke="#540023" strokeWidth={3} dot={{ fill: '#540023', r: 4, strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
                     </LineChart>
                 </ResponsiveContainer>
             </motion.div>
@@ -98,17 +100,18 @@ export const ReportAnalytics: React.FC = () => (
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 }}
-                className="glass-card p-5"
+                className="minimal-card p-6 bg-white"
             >
-                <h3 className="text-sm font-semibold text-white mb-4">Status Distribution</h3>
-                <ResponsiveContainer width="100%" height={200}>
+                <h3 className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest mb-6 border-b border-brand-secondary/5 pb-4">Operational Mix</h3>
+                <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                         <Pie
                             data={statusDistribution}
-                            cx="50%" cy="50%"
-                            innerRadius={45} outerRadius={75}
-                            paddingAngle={3}
+                            cx="50%" cy="45%"
+                            innerRadius={50} outerRadius={80}
+                            paddingAngle={5}
                             dataKey="value"
+                            stroke="none"
                         >
                             {statusDistribution.map((entry, i) => (
                                 <Cell key={i} fill={entry.color} />
@@ -117,7 +120,9 @@ export const ReportAnalytics: React.FC = () => (
                         <Tooltip contentStyle={tooltipStyle} />
                         <Legend
                             verticalAlign="bottom"
-                            formatter={(value: string) => <span className="text-xs text-civic-muted">{value}</span>}
+                            align="center"
+                            iconType="circle"
+                            formatter={(value: string) => <span className="text-[9px] font-black uppercase tracking-widest text-brand-secondary/60">{value}</span>}
                         />
                     </PieChart>
                 </ResponsiveContainer>

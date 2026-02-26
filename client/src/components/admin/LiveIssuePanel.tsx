@@ -54,27 +54,27 @@ export const LiveIssuePanel: React.FC<LiveIssuePanelProps> = ({ issues, onAssign
     }, [issues, search, catFilter, statusFilter, sevFilter]);
 
     return (
-        <section className="mb-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-6">
-                <h2 className="text-xl font-bold text-white mb-1">Live Issue Management</h2>
-                <p className="text-civic-muted text-sm">Operational workspace — {filteredIssues.length} issues</p>
+        <section className="mb-12">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-8 border-b border-brand-secondary/5 pb-6">
+                <h2 className="text-3xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Instance Repository</h2>
+                <p className="text-brand-secondary/40 text-xs font-bold uppercase tracking-widest">{filteredIssues.length} active operational nodes</p>
             </motion.div>
 
             {/* Search & Filters */}
-            <div className="flex flex-col md:flex-row gap-3 mb-4">
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-civic-muted" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-secondary/40" />
                     <input
                         type="text"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        placeholder="Search issues..."
-                        className="w-full pl-9 pr-4 py-2.5 glass-card bg-white/5 text-white text-sm placeholder:text-civic-muted/60 focus:outline-none focus:ring-1 focus:ring-civic-orange/50"
+                        placeholder="Search UUID or location..."
+                        className="w-full pl-11 pr-4 py-3.5 minimal-card bg-white border-brand-secondary/5 text-brand-secondary text-sm placeholder:text-brand-secondary/20 focus:outline-none focus:ring-1 focus:ring-brand-secondary/20"
                     />
                 </div>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-2 px-4 py-2.5 glass-card text-sm ${showFilters ? 'text-civic-orange' : 'text-civic-muted'} hover:text-white transition-colors`}
+                    className={`flex items-center gap-3 px-6 py-3.5 minimal-card text-sm font-bold uppercase tracking-widest transition-all ${showFilters ? 'bg-brand-secondary text-white' : 'bg-white text-brand-secondary/40 hover:text-brand-secondary'}`}
                 >
                     <Filter className="w-4 h-4" /> Filters
                 </button>
@@ -83,29 +83,29 @@ export const LiveIssuePanel: React.FC<LiveIssuePanelProps> = ({ issues, onAssign
             <AnimatePresence>
                 {showFilters && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex flex-wrap gap-3 mb-4"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex flex-wrap gap-3 mb-8 p-6 rounded-2xl bg-brand-secondary/5 border border-brand-secondary/5"
                     >
                         <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-                            className="glass-card bg-white/5 text-white text-xs px-3 py-2 focus:outline-none">
-                            {categories.map(c => <option key={c} value={c} className="bg-civic-dark">{c === 'All' ? 'All Categories' : c}</option>)}
+                            className="bg-white border border-brand-secondary/10 rounded-xl text-brand-secondary text-xs px-4 py-2.5 focus:outline-none">
+                            {categories.map(c => <option key={c} value={c}>{c === 'All' ? 'All Categories' : c.toUpperCase()}</option>)}
                         </select>
                         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-                            className="glass-card bg-white/5 text-white text-xs px-3 py-2 focus:outline-none">
-                            {statuses.map(s => <option key={s} value={s} className="bg-civic-dark">{s === 'All' ? 'All Statuses' : s.replace('_', ' ')}</option>)}
+                            className="bg-white border border-brand-secondary/10 rounded-xl text-brand-secondary text-xs px-4 py-2.5 focus:outline-none">
+                            {statuses.map(s => <option key={s} value={s}>{s === 'All' ? 'All Statuses' : s.replace('_', ' ').toUpperCase()}</option>)}
                         </select>
                         <select value={sevFilter} onChange={e => setSevFilter(e.target.value)}
-                            className="glass-card bg-white/5 text-white text-xs px-3 py-2 focus:outline-none">
-                            {severities.map(s => <option key={s} value={s} className="bg-civic-dark">{s === 'All' ? 'All Severities' : s}</option>)}
+                            className="bg-white border border-brand-secondary/10 rounded-xl text-brand-secondary text-xs px-4 py-2.5 focus:outline-none">
+                            {severities.map(s => <option key={s} value={s}>{s === 'All' ? 'All Severities' : s.toUpperCase()}</option>)}
                         </select>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Issue cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredIssues.slice(0, 12).map((issue, idx) => {
                     const severity = issue.severity || Math.round((issue.risk_score || 0.5) * 10);
                     const sevLabel = getSeverityFromScore(severity);
@@ -118,62 +118,76 @@ export const LiveIssuePanel: React.FC<LiveIssuePanelProps> = ({ issues, onAssign
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.03 }}
-                            whileHover={{ y: -2 }}
-                            className="glass-card overflow-hidden"
+                            whileHover={{ y: -5 }}
+                            className="minimal-card overflow-hidden bg-white shadow-soft"
                         >
                             {/* Image + severity */}
-                            <div className="h-28 bg-civic-card relative">
+                            <div className="h-44 bg-brand-secondary/5 relative overflow-hidden group">
                                 {issue.image_url ? (
-                                    <img src={issue.image_url} alt="" className="w-full h-full object-cover" />
+                                    <img src={issue.image_url} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-civic-card to-civic-dark flex items-center justify-center">
-                                        <MapPin className="w-6 h-6 text-civic-muted/30" />
+                                    <div className="w-full h-full flex items-center justify-center opacity-10">
+                                        <MapPin className="w-12 h-12 text-brand-secondary" />
                                     </div>
                                 )}
-                                <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${sevLabel === 'Critical' ? 'severity-critical' :
-                                        sevLabel === 'High' ? 'severity-medium' : 'severity-low'
-                                    }`}>
-                                    {sevLabel} ({severity}/10)
-                                </span>
-                                <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold ${badgeClass}`}>
-                                    {issue.status.replace('_', ' ')}
-                                </span>
+                                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md ${sevLabel === 'Critical' ? 'bg-red-500 text-white' :
+                                            sevLabel === 'High' ? 'bg-brand-secondary text-white' : 'bg-brand-secondary/20 text-brand-secondary'
+                                        }`}>
+                                        {sevLabel}
+                                    </span>
+                                </div>
+                                <div className="absolute top-4 right-4">
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md ${badgeClass}`}>
+                                        {issue.status.replace('_', ' ')}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Content */}
-                            <div className="p-3 space-y-2">
-                                <h4 className="font-semibold text-sm text-white capitalize">{issue.category}</h4>
+                            <div className="p-5 space-y-4">
+                                <h4 className="font-bold text-lg text-brand-secondary capitalize tracking-tight">{issue.category}</h4>
 
-                                <div className="flex items-center gap-3 text-[11px] text-civic-muted">
-                                    <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3" />{issue.address || 'Unknown'}</span>
-                                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(issue.created_at).toLocaleDateString()}</span>
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2 text-[11px] font-bold text-brand-secondary/40 uppercase tracking-widest">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        <span className="truncate">{issue.address || 'Location Restricted'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px] font-bold text-brand-secondary/40 uppercase tracking-widest">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+                                    </div>
                                 </div>
 
                                 {issue.risk_score && (
-                                    <div className="flex items-center gap-1 text-[11px] text-purple-400">
-                                        <Brain className="w-3 h-3" /> AI Risk: {(issue.risk_score * 100).toFixed(0)}%
+                                    <div className="p-3 rounded-xl bg-brand-secondary/[0.03] border border-brand-secondary/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-brand-secondary uppercase tracking-widest">
+                                            <Brain className="w-3.5 h-3.5 opacity-40" />
+                                            <span>AI Risk Index</span>
+                                        </div>
+                                        <span className="text-sm font-black text-brand-secondary">{(issue.risk_score * 100).toFixed(0)}%</span>
                                     </div>
                                 )}
 
                                 {/* Action buttons */}
-                                <div className="flex gap-2 pt-1">
+                                <div className="flex gap-2 pt-2">
                                     <button
                                         onClick={() => onAssign(issue)}
-                                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-civic-orange glass-card hover:bg-civic-orange/10 transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest bg-brand-secondary text-white rounded-xl hover:opacity-90 transition-opacity"
                                     >
-                                        <User className="w-3 h-3" /> Assign
+                                        <User className="w-3.5 h-3.5" /> Assign
                                     </button>
-                                    <button className="flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] text-civic-muted glass-card hover:bg-white/5 transition-colors">
-                                        <Eye className="w-3 h-3" />
+                                    <button className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors">
+                                        <Eye className="w-4 h-4" />
                                     </button>
-                                    <button className="flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] text-civic-muted glass-card hover:bg-white/5 transition-colors">
-                                        <GitMerge className="w-3 h-3" />
+                                    <button className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors">
+                                        <GitMerge className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => onUpdateStatus(issue.id, 'in_progress')}
-                                        className="flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] text-yellow-400 glass-card hover:bg-yellow-500/10 transition-colors"
+                                        className="flex items-center justify-center p-2.5 text-brand-secondary/40 bg-brand-secondary/5 rounded-xl hover:text-brand-secondary transition-colors"
                                     >
-                                        <Star className="w-3 h-3" />
+                                        <Star className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
