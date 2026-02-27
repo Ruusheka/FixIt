@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Megaphone, MapPin, Navigation, Clock, Calendar, Bell, Info, ChevronRight, Map as MapIcon } from 'lucide-react';
+import { Megaphone, MapPin, Navigation, Clock, Calendar, Bell, Info, ChevronRight, Map as MapIcon, LayoutDashboard, Globe, FileText, Target, Award } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { MinimalLayout } from '../components/MinimalLayout';
@@ -9,8 +9,12 @@ import { format } from 'date-fns';
 import { Broadcast } from '../types/reports';
 
 const navItems = [
-    { label: 'Dashboard', path: '/citizen#dashboard', icon: Megaphone },
-    { label: 'Back Home', path: '/citizen', icon: Navigation }
+    { label: 'Dashboard', path: '/citizen', icon: LayoutDashboard },
+    { label: 'Reports Hub', path: '/reports', icon: Globe },
+    { label: 'My Report', path: '/citizen/reports', icon: FileText },
+    { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
+    { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
+    { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
 ];
 
 export const AnnouncementsPage: React.FC = () => {
@@ -138,9 +142,27 @@ export const AnnouncementsPage: React.FC = () => {
 
                                         {/* Content Section */}
                                         <div className="flex-1 space-y-6">
-                                            <h3 className="text-3xl font-black text-brand-secondary uppercase tracking-tight leading-none group-hover:text-brand-primary transition-colors duration-300">
-                                                {b.title}
-                                            </h3>
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-brand-secondary/5 flex items-center justify-center overflow-hidden border border-brand-secondary/10">
+                                                        {b.author?.avatar_url ? (
+                                                            <img src={b.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-brand-secondary text-brand-primary text-[10px] font-black">
+                                                                {b.author?.full_name?.[0] || 'A'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-brand-secondary/30 uppercase tracking-widest leading-none">Intelligence Source</p>
+                                                        <p className="text-[10px] font-black text-brand-secondary uppercase tracking-tighter mt-0.5">{b.author?.full_name || 'City Admin'}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="h-8 w-px bg-brand-secondary/5" />
+                                                <h3 className="text-3xl font-black text-brand-secondary uppercase tracking-tight leading-none group-hover:text-brand-primary transition-colors duration-300">
+                                                    {b.title}
+                                                </h3>
+                                            </div>
                                             <p className="text-brand-secondary/60 font-bold leading-relaxed text-lg">
                                                 {b.message}
                                             </p>

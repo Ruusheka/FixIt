@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Users, User, ShieldAlert, Building2,
     Settings, Megaphone, ScrollText, Plus,
-    BarChart3, ClipboardCheck, Radio, DollarSign,
+    LayoutDashboard, ClipboardCheck, Radio,
     Shield, Briefcase, AlertTriangle, CheckCircle2,
     Clock, TrendingUp, ChevronRight, UserPlus, ShieldCheck,
-    MapPin
+    MapPin, BarChart3
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
 import { useOperations } from '../hooks/useOperations';
@@ -17,17 +17,17 @@ import { ReassignModal } from '../components/admin/ReassignModal';
 import { Profile, Worker, Escalation } from '../types/reports';
 
 const navItems = [
-    { label: 'Overview', path: '/admin', icon: BarChart3 },
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
     { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Broadcast', path: '/admin#broadcast', icon: Radio },
-    { label: 'Finances', path: '/admin#budget', icon: DollarSign },
-    { label: 'Userbase', path: '/admin#users', icon: Users },
+    { label: 'Workers', path: '/admin/workers', icon: Users },
+    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
+    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
 ];
 
 export const AdminOperations: React.FC = () => {
-    const { workers, departments, escalations, slaRules, announcements, activityLogs, loading, updateSLA, logActivity, fetchData, postAnnouncement } = useOperations();
-    const [activeSection, setActiveSection] = useState<'overview' | 'workforce' | 'escalations' | 'departments' | 'sla' | 'announcements' | 'logs'>('overview');
+    const { workers, departments, escalations, slaRules, announcements, activityLogs, loading, updateSLA, logActivity, logReportActivity, fetchData, postAnnouncement, getReportLogs, metrics } = useOperations();
+    const [activeSection, setActiveSection] = useState<'overview' | 'escalations' | 'departments' | 'sla' | 'announcements' | 'logs'>('overview');
     const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
     const [isWorkerDetailOpen, setIsWorkerDetailOpen] = useState(false);
     const [isReassignModalOpen, setIsReassignModalOpen] = useState(false);
@@ -71,7 +71,15 @@ export const AdminOperations: React.FC = () => {
     };
 
     const resolveEscalation = async (escId: string) => {
+        const escalation = escalations.find(e => e.id === escId);
         await (supabase.from('escalations') as any).update({ resolved: true, resolved_at: new Date().toISOString() }).eq('id', escId);
+
+        if (escalation?.report_id) {
+            await logReportActivity(escalation.report_id, 'escalation_resolved', { note: 'Admin resolved tactical escalation.' });
+            // Also update the issue status to resolved if it's not already
+            await (supabase.from('issues') as any).update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('id', escalation.report_id);
+        }
+
         logActivity(`Resolved escalation`, 'ESCALATION', escId);
         fetchData();
     };
@@ -92,10 +100,23 @@ export const AdminOperations: React.FC = () => {
             is_active: true
         });
 
-        // 3. Update issue status if needed
-        await (supabase.from('issues') as any).update({ assigned_worker: workerId }).eq('id', selectedEscalation.report_id);
+        // 3. Update issue status and assignment
+        await (supabase.from('issues') as any).update({
+            assigned_worker: workerId,
+            status: 'assigned'
+        }).eq('id', selectedEscalation.report_id);
 
-        logActivity(`Reassigned escalation to new personnel`, 'ESCALATION', selectedEscalation.id);
+        // 4. Update worker cooldown and status
+        await (supabase.from('workers') as any).update({
+            status: 'busy',
+            last_assigned_at: new Date().toISOString()
+        }).eq('id', workerId);
+
+        logActivity(`Reassigned escalation and set worker cooldown`, 'ESCALATION', selectedEscalation.id);
+        await logReportActivity(selectedEscalation.report_id, 'personnel_reassigned', {
+            note: `Tactical reassignment executed. Operations handed to Worker ID: ${workerId.slice(0, 8)}...`,
+            worker_id: workerId
+        });
         setIsReassignModalOpen(false);
         fetchData();
     };
@@ -108,7 +129,6 @@ export const AdminOperations: React.FC = () => {
 
     const sections = [
         { id: 'overview', label: 'Operational Overview', icon: Activity },
-        { id: 'workforce', label: 'Workforce Management', icon: Users },
         { id: 'escalations', label: 'Escalations Center', icon: ShieldAlert },
         { id: 'departments', label: 'Departments', icon: Building2 },
         { id: 'sla', label: 'SLA & Priority Control', icon: Settings },
@@ -180,7 +200,7 @@ export const AdminOperations: React.FC = () => {
                             ) : (
                                 <SectionRenderer
                                     section={activeSection}
-                                    data={{ workers, departments, escalations, slaRules, announcements, activityLogs }}
+                                    data={{ workers, departments, escalations, slaRules, announcements, activityLogs, metrics }}
                                     handlers={{
                                         updateSLA,
                                         updateWorkerStatus,
@@ -191,6 +211,8 @@ export const AdminOperations: React.FC = () => {
                                         resolveEscalation,
                                         postAnnouncement,
                                         handleCreateDepartment,
+                                        getReportLogs,
+                                        metrics,
                                         supabase
                                     }}
                                 />
@@ -225,8 +247,12 @@ export const AdminOperations: React.FC = () => {
 
 const SectionRenderer: React.FC<{ section: string; data: any; handlers: any }> = ({ section, data, handlers }) => {
     switch (section) {
-        case 'overview': return <OverviewSection data={data} />;
-        case 'workforce': return <WorkforceSection data={data} handlers={handlers} />;
+        case 'overview': return (
+            <div className="space-y-12">
+                <OverviewSection data={data} />
+                <WorkforceSection data={data} handlers={handlers} />
+            </div>
+        );
         case 'escalations': return <EscalationsSection data={data} handlers={handlers} />;
         case 'departments': return <DepartmentsSection data={data} onCreate={handlers.handleCreateDepartment} />;
         case 'sla': return <SLASection data={data} updateSLA={handlers.updateSLA} />;
@@ -241,9 +267,9 @@ const SectionRenderer: React.FC<{ section: string; data: any; handlers: any }> =
 const OverviewSection: React.FC<{ data: any }> = ({ data }) => {
     const stats = [
         { label: 'System Load', value: 'Nominal', icon: TrendingUp, color: 'text-green-600' },
-        { label: 'Active Personnel', value: data.workers.filter((w: any) => w.status === 'available').length, icon: Users, color: 'text-brand-secondary' },
-        { label: 'Critical Escalations', value: data.escalations.filter((e: any) => !e.resolved).length, icon: AlertTriangle, color: 'text-red-600' },
-        { label: 'Avg Resolution', value: '18.4h', icon: Clock, color: 'text-brand-secondary' },
+        { label: 'Active Personnel', value: data.metrics?.activePersonnel || 0, icon: Users, color: 'text-brand-secondary' },
+        { label: 'Critical Escalations', value: data.escalations?.filter((e: any) => !['closed', 'resolved'].includes(e.report?.status)).length || 0, icon: AlertTriangle, color: 'text-red-600' },
+        { label: 'Avg Resolution', value: data.metrics?.avgResolutionTime || '0h', icon: Clock, color: 'text-brand-secondary' },
     ];
 
     return (
@@ -316,11 +342,21 @@ const WorkforceSection: React.FC<{ data: any; handlers: any }> = ({ data, handle
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 border-t border-b border-brand-secondary/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-20 h-1.5 bg-brand-secondary/5 rounded-full overflow-hidden">
-                                            <div className="h-full bg-brand-secondary/40 w-[45%]" />
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-20 h-1.5 bg-brand-secondary/5 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-brand-secondary/40 transition-all duration-500"
+                                                    style={{ width: `${Math.min((worker.metrics?.[0]?.total_assigned || 0) * 20, 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-black text-brand-secondary/40">
+                                                {worker.metrics?.[0]?.total_assigned || 0} Active
+                                            </span>
                                         </div>
-                                        <span className="text-[10px] font-black text-brand-secondary/40">4 Active</span>
+                                        <div className="flex items-center gap-1 text-[9px] font-bold text-green-600/50 uppercase tracking-tighter">
+                                            <CheckCircle2 size={10} /> {worker.metrics?.[0]?.total_resolved || 0} Completed
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 rounded-r-2xl border-r border-t border-b border-brand-secondary/5 text-right">
@@ -341,57 +377,124 @@ const WorkforceSection: React.FC<{ data: any; handlers: any }> = ({ data, handle
 };
 
 const EscalationsSection: React.FC<{ data: any; handlers: any }> = ({ data, handlers }) => {
+    const [expandedIds, setExpandedIds] = useState<string[]>([]);
+    const [logs, setLogs] = useState<{ [key: string]: any[] }>({});
+
+    const toggleExpand = async (esc: any) => {
+        const id = esc.id;
+        if (expandedIds.includes(id)) {
+            setExpandedIds(prev => prev.filter(i => i !== id));
+        } else {
+            setExpandedIds(prev => [...prev, id]);
+            if (!logs[esc.report_id]) {
+                const reportLogs = await handlers.getReportLogs(esc.report_id);
+                setLogs(prev => ({ ...prev, [esc.report_id]: reportLogs }));
+            }
+        }
+    };
+
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-black text-brand-secondary uppercase tracking-tight">Active Escalations</h3>
             <div className="grid grid-cols-1 gap-4">
-                {data.escalations.filter((e: any) => !e.resolved).map((esc: any) => (
-                    <div key={esc.id} className={`minimal-card p-6 border-l-4 ${esc.severity === 'critical' ? 'border-red-600' : 'border-orange-500'
+                {data.escalations.filter((e: any) => !['closed', 'resolved'].includes(e.report?.status)).map((esc: any) => (
+                    <div key={esc.id} className={`minimal-card overflow-hidden border-l-4 ${esc.severity === 'critical' ? 'border-red-600' : 'border-orange-500'
                         }`}>
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${esc.severity === 'critical' ? 'bg-red-600 text-white' : 'bg-orange-500/10 text-orange-600'
-                                        }`}>
-                                        {esc.severity}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-brand-secondary/40 tracking-widest uppercase">
-                                        ESCALATED {new Date(esc.created_at).toLocaleDateString()}
-                                    </span>
+                        <div className="p-6">
+                            <div className="flex items-start justify-between">
+                                <div className="space-y-2 flex-1 cursor-pointer" onClick={() => toggleExpand(esc)}>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${esc.severity === 'critical' ? 'bg-red-600 text-white' : 'bg-orange-500/10 text-orange-600'
+                                            }`}>
+                                            {esc.severity}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-brand-secondary/40 tracking-widest uppercase">
+                                            ESCALATED {new Date(esc.created_at).toLocaleDateString()}
+                                        </span>
+                                        <span className="text-[10px] font-black text-brand-secondary/20 uppercase tracking-widest ml-2">
+                                            Click to view tactical timeline
+                                        </span>
+                                    </div>
+                                    <h4 className="text-lg font-black text-brand-secondary tracking-tight">{esc.report?.title}</h4>
+                                    <div className="flex items-center gap-4 mt-1">
+                                        <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest flex items-center gap-1.5">
+                                            <User size={12} className="text-brand-secondary/20" />
+                                            {esc.report?.reporter?.full_name || 'Anonymous Citizen'}
+                                        </p>
+                                        <div className="h-1 w-1 rounded-full bg-brand-secondary/10" />
+                                        <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest flex items-center gap-1.5">
+                                            <Briefcase size={12} className="text-brand-secondary/20" />
+                                            {esc.report?.assigned_worker_profile?.full_name || 'PENDING ASSIGNMENT'}
+                                        </p>
+                                        <div className="h-1 w-1 rounded-full bg-brand-secondary/10" />
+                                        <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest flex items-center gap-1.5">
+                                            <MapPin size={12} className="text-brand-secondary/20" />
+                                            {esc.report?.address?.split(',')[0] || 'Tactical Sector'}
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-brand-secondary/60 max-w-2xl mt-2">{esc.reason}</p>
                                 </div>
-                                <h4 className="text-lg font-black text-brand-secondary tracking-tight">{esc.report?.title}</h4>
-                                <div className="flex items-center gap-4 mt-1">
-                                    <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest flex items-center gap-1.5">
-                                        <User size={12} className="text-brand-secondary/20" />
-                                        {esc.report?.reporter?.full_name || 'Anonymous Citizen'}
-                                    </p>
-                                    <div className="h-1 w-1 rounded-full bg-brand-secondary/10" />
-                                    <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest flex items-center gap-1.5">
-                                        <MapPin size={12} className="text-brand-secondary/20" />
-                                        {esc.report?.address?.split(',')[0] || 'Tactical Sector'}
-                                    </p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => handlers.openReassign(esc)}
+                                        className="px-4 py-2 bg-brand-secondary/5 text-brand-secondary text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-secondary hover:text-white transition-all"
+                                    >
+                                        Reassign
+                                    </button>
+                                    <button
+                                        onClick={() => handlers.resolveEscalation(esc.id)}
+                                        className="px-4 py-2 bg-brand-secondary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all"
+                                    >
+                                        Resolve
+                                    </button>
                                 </div>
-                                <p className="text-xs text-brand-secondary/60 max-w-2xl mt-2">{esc.reason}</p>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => handlers.openReassign(esc)}
-                                    className="px-4 py-2 bg-brand-secondary/5 text-brand-secondary text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-secondary hover:text-white transition-all"
-                                >
-                                    Reassign
-                                </button>
-                                <button
-                                    onClick={() => handlers.resolveEscalation(esc.id)}
-                                    className="px-4 py-2 bg-brand-secondary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all"
-                                >
-                                    Resolve
-                                </button>
                             </div>
                         </div>
+
+                        {/* Expandable Activity Log */}
+                        <AnimatePresence>
+                            {expandedIds.includes(esc.id) && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="border-t border-brand-secondary/5 bg-brand-primary/5"
+                                >
+                                    <div className="p-6 space-y-4">
+                                        <h5 className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                                            <ScrollText size={14} /> Tactical Timeline
+                                        </h5>
+                                        <div className="space-y-3 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1px] before:bg-brand-secondary/5">
+                                            {(logs[esc.report_id] || []).map((log, idx) => (
+                                                <div key={log.id} className="pl-8 relative flex flex-col gap-1">
+                                                    <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white border border-brand-secondary/10 flex items-center justify-center z-10">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary/20" />
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[9px] font-black text-brand-secondary leading-none">
+                                                            {log.actor?.full_name || 'SYSTEM'}
+                                                        </span>
+                                                        <span className="text-[8px] font-bold text-brand-secondary/20 uppercase tracking-widest">
+                                                            {new Date(log.created_at).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-brand-secondary/60 font-medium italic">
+                                                        {log.action_type.replace('_', ' ').toUpperCase()}: {log.details?.note || 'Operational update logged.'}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                            {(!logs[esc.report_id] || logs[esc.report_id].length === 0) && (
+                                                <p className="pl-8 text-[10px] font-black text-brand-secondary/20 uppercase italic">Awaiting tactical entry...</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 ))}
             </div>
-            {data.escalations.filter((e: any) => !e.resolved).length === 0 && (
+            {data.escalations.filter((e: any) => !['closed', 'resolved'].includes(e.report?.status)).length === 0 && (
                 <div className="py-20 flex flex-col items-center justify-center space-y-4 bg-brand-primary/5 rounded-[40px] border border-dashed border-brand-secondary/10">
                     <ShieldCheck size={48} className="text-brand-secondary/10" />
                     <p className="text-xs font-black text-brand-secondary/30 uppercase tracking-widest">No active escalations detected</p>

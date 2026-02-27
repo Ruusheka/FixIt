@@ -15,11 +15,21 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, isOverdue, overd
     const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
         reported: { label: 'Open', color: 'bg-brand-secondary/5 text-brand-secondary border-brand-secondary/10', icon: null },
         open: { label: 'Open', color: 'bg-brand-secondary/5 text-brand-secondary border-brand-secondary/10', icon: null },
-        in_progress: { label: 'In Progress', color: 'bg-brand-secondary/10 text-brand-secondary border-brand-secondary/20', icon: null },
-        resolved: { label: 'Resolved', color: 'bg-green-500/10 text-green-600 border-green-500/20', icon: <CheckCircle size={14} className="mr-1" /> }
+        assigned: { label: 'Assigned', color: 'bg-blue-500/10 text-blue-700 border-blue-500/20', icon: null },
+        in_progress: { label: 'In Progress', color: 'bg-orange-500/10 text-orange-700 border-orange-500/20', icon: null },
+        awaiting_verification: { label: 'Review', color: 'bg-amber-500/10 text-amber-700 border-amber-500/20', icon: null },
+        under_review: { label: 'Review', color: 'bg-amber-500/10 text-amber-700 border-amber-500/20', icon: null },
+        reopened: { label: 'Reopened', color: 'bg-red-500/10 text-red-700 border-red-500/20', icon: <AlertTriangle size={14} className="mr-1" /> },
+        resolved: { label: 'Resolved', color: 'bg-green-500/10 text-green-600 border-green-500/20', icon: <CheckCircle size={14} className="mr-1" /> },
+        RESOLVED: { label: 'Resolved', color: 'bg-green-500/10 text-green-600 border-green-500/20', icon: <CheckCircle size={14} className="mr-1" /> },
+        closed: { label: 'Closed', color: 'bg-green-500/10 text-green-700 border-green-500/20', icon: <CheckCircle size={14} className="mr-1" /> }
     };
 
-    const config = statusConfig[report.status];
+    const config = statusConfig[report.status] || {
+        label: report.status.toUpperCase(),
+        color: 'bg-brand-secondary/5 text-brand-secondary border-brand-secondary/10',
+        icon: null
+    };
 
     return (
         <motion.div
@@ -30,8 +40,12 @@ export const ReportCard: React.FC<ReportCardProps> = ({ report, isOverdue, overd
             {/* Header: User Info */}
             <div className="p-4 flex items-center justify-between border-b border-brand-secondary/5">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-brand-secondary/5 flex items-center justify-center">
-                        <User size={16} className="text-brand-secondary/40" />
+                    <div className="w-8 h-8 rounded-full bg-brand-secondary/5 flex items-center justify-center overflow-hidden border border-brand-secondary/10">
+                        {report.profiles?.avatar_url ? (
+                            <img src={report.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                            <User size={16} className="text-brand-secondary/40" />
+                        )}
                     </div>
                     <div>
                         <div className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">

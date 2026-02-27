@@ -66,10 +66,10 @@ export const WorkerDetailModal: React.FC<WorkerDetailModalProps> = ({
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                                <StatCard label="Resolved" value={worker.metrics?.total_resolved || 0} icon={CheckCircle2} />
-                                <StatCard label="Active missions" value={worker.metrics?.total_assigned || 0} icon={Briefcase} />
-                                <StatCard label="Overdue" value={worker.metrics?.total_overdue || 0} icon={AlertTriangle} color="text-red-600" />
-                                <StatCard label="Perf Score" value={`${worker.metrics?.performance_score || 0}%`} icon={TrendingUp} />
+                                <StatCard label="Resolved" value={worker.metrics?.[0]?.total_resolved || 0} icon={CheckCircle2} />
+                                <StatCard label="Active missions" value={worker.metrics?.[0]?.total_assigned || 0} icon={Briefcase} />
+                                <StatCard label="Overdue" value={worker.metrics?.[0]?.total_overdue || 0} icon={AlertTriangle} color="text-red-600" />
+                                <StatCard label="Perf Score" value={`${worker.metrics?.[0]?.performance_score || 0}%`} icon={TrendingUp} />
                             </div>
 
                             <div className="space-y-6">
@@ -84,7 +84,7 @@ export const WorkerDetailModal: React.FC<WorkerDetailModalProps> = ({
                                             <div className="h-full bg-brand-secondary w-[92%]" />
                                         </div>
                                         <p className="text-[10px] text-brand-secondary/30 font-bold uppercase leading-relaxed font-black">
-                                            Top 5% of resolution efficiency in the {worker.department?.name} sector.
+                                            Top 5% of resolution efficiency in the {worker.department?.name || 'FIELD OPS'} sector.
                                         </p>
                                     </div>
                                     <div className="bg-brand-primary/5 rounded-3xl p-6 border border-brand-secondary/5 space-y-4">
@@ -92,7 +92,7 @@ export const WorkerDetailModal: React.FC<WorkerDetailModalProps> = ({
                                             <Clock size={16} className="text-brand-secondary/40" />
                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-secondary/60">Avg Response Time</span>
                                         </div>
-                                        <p className="text-3xl font-black text-brand-secondary tracking-tight">{worker.metrics?.avg_resolution_time || '4.2h'}</p>
+                                        <p className="text-3xl font-black text-brand-secondary tracking-tight">{worker.metrics?.[0]?.avg_resolution_time || '4.2h'}</p>
                                     </div>
                                 </div>
                             </div>

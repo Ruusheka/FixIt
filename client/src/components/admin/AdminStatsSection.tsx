@@ -57,13 +57,13 @@ interface AdminStatsSectionProps {
 
 export const AdminStatsSection: React.FC<AdminStatsSectionProps> = ({ reports }) => {
     const total = reports.length;
-    const open = reports.filter(r => r.status === 'reported').length;
-    const inProgress = reports.filter(r => r.status === 'in_progress').length;
-    const resolved = reports.filter(r => r.status === 'resolved').length;
+    const open = reports.filter(r => r.status?.toLowerCase() === 'reported').length;
+    const inProgress = reports.filter(r => r.status?.toLowerCase() === 'in_progress').length;
+    const resolved = reports.filter(r => ['resolved', 'RESOLVED'].includes(r.status)).length;
 
     const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
     const overdue = reports.filter(r =>
-        r.status !== 'resolved' && new Date(r.created_at) < seventyTwoHoursAgo
+        !['resolved', 'RESOLVED', 'closed', 'CLOSED'].includes(r.status) && new Date(r.created_at) < seventyTwoHoursAgo
     ).length;
 
     const escalated = reports.filter(r => r.is_escalated).length;

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Briefcase, AlertTriangle, Clock, Send } from 'lucide-react';
+import { Worker } from '../../types/reports';
 
 interface WorkerAssignModalProps {
     isOpen: boolean;
     issue: any | null;
+    workers: Worker[];
     onClose: () => void;
     onAssign: (issueId: string, data: AssignmentData) => void;
 }
@@ -17,14 +19,7 @@ interface AssignmentData {
     notes: string;
 }
 
-const departments = ['Roads', 'Water', 'Sanitation', 'Infrastructure', 'Logistics'];
-const priorities = ['Low', 'Medium', 'High', 'Critical'];
-const demoWorkers = [
-    'Rajesh Kumar', 'Priya Mehta', 'Amit Singh', 'Neha Rani',
-    'Vikram Patel', 'Sunita Devi', 'Rohit Sharma', 'Kavita Joshi',
-];
-
-export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, issue, onClose, onAssign }) => {
+export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, issue, workers, onClose, onAssign }) => {
     const [worker, setWorker] = useState('');
     const [department, setDepartment] = useState('');
     const [priority, setPriority] = useState('Medium');
@@ -38,6 +33,21 @@ export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, is
         onClose();
         setWorker(''); setDepartment(''); setNotes('');
     };
+
+    const availableWorkers = workers.filter(w => {
+        if (w.status !== 'available') return false;
+        if (!w.last_assigned_at) return true;
+        const now = new Date();
+        const lastAssigned = new Date(w.last_assigned_at);
+        const diffHours = (now.getTime() - lastAssigned.getTime()) / (1000 * 60 * 60);
+        return diffHours >= 72; // 3 days cooldown
+    });
+
+    const cooldownWorkers = workers.filter(w =>
+        w.status === 'available' &&
+        w.last_assigned_at &&
+        ((new Date().getTime() - new Date(w.last_assigned_at).getTime()) / (1000 * 60 * 60)) < 72
+    );
 
     return (
         <AnimatePresence>
@@ -77,11 +87,30 @@ export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, is
                                     <User className="w-3.5 h-3.5" /> Personnel Selection
                                 </label>
                                 <select
-                                    value={worker} onChange={e => setWorker(e.target.value)} required
+                                    value={worker} onChange={e => {
+                                        setWorker(e.target.value);
+                                        const selected = workers.find(w => w.id === e.target.value);
+                                        if (selected?.department?.name) setDepartment(selected.department.name);
+                                    }} required
                                     className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-4 py-3 rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 appearance-none font-bold"
                                 >
                                     <option value="">Choose operative...</option>
-                                    {demoWorkers.map(w => <option key={w} value={w}>{w.toUpperCase()}</option>)}
+                                    <optgroup label="Available Personnel">
+                                        {availableWorkers.map(w => (
+                                            <option key={w.id} value={w.id}>
+                                                {w.profile?.full_name?.toUpperCase() || 'UNNAMED OPERATIVE'}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    {cooldownWorkers.length > 0 && (
+                                        <optgroup label="Tactical Cooldown (LOCKED)">
+                                            {cooldownWorkers.map(w => (
+                                                <option key={w.id} value={w.id} disabled>
+                                                    {w.profile?.full_name?.toUpperCase()} (LOCKED)
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    )}
                                 </select>
                             </div>
 
@@ -91,13 +120,11 @@ export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, is
                                     <label className="flex items-center gap-2 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">
                                         <Briefcase className="w-3.5 h-3.5" /> Sector
                                     </label>
-                                    <select
-                                        value={department} onChange={e => setDepartment(e.target.value)}
-                                        className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-4 py-3 rounded-xl focus:outline-none font-bold appearance-none"
-                                    >
-                                        <option value="">Select sector...</option>
-                                        {departments.map(d => <option key={d} value={d}>{d.toUpperCase()}</option>)}
-                                    </select>
+                                    <input
+                                        value={department} readOnly
+                                        placeholder="Auto-detected..."
+                                        className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-4 py-3 rounded-xl focus:outline-none font-bold opacity-60"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">
@@ -107,7 +134,7 @@ export const WorkerAssignModal: React.FC<WorkerAssignModalProps> = ({ isOpen, is
                                         value={priority} onChange={e => setPriority(e.target.value)}
                                         className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-4 py-3 rounded-xl focus:outline-none font-bold appearance-none"
                                     >
-                                        {priorities.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
+                                        {['Low', 'Medium', 'High', 'Critical'].map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
                                     </select>
                                 </div>
                             </div>

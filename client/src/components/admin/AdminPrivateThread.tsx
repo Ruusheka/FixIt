@@ -24,63 +24,39 @@ export const AdminPrivateThread: React.FC<AdminPrivateThreadProps> = ({ report, 
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setupThread();
+        if (report.id) {
+            fetchMessages();
+            subscribeToMessages();
+        }
     }, [report.id]);
 
-    const setupThread = async () => {
+    const fetchMessages = async () => {
         setLoading(true);
-        // 1. Find or Create Thread
-        let { data: thread } = await (supabase
-            .from('report_private_threads') as any)
-            .select('id')
-            .eq('report_id', report.id)
-            .single();
-
-        if (!thread) {
-            const { data: newThread, error } = await (supabase
-                .from('report_private_threads') as any)
-                .insert({
-                    report_id: report.id,
-                    citizen_id: report.user_id,
-                    admin_id: adminId
-                })
-                .select('id')
-                .single();
-
-            if (newThread) thread = newThread;
-            else if (error) console.error("Error creating thread:", error);
-        }
-
-        if (thread) {
-            setThreadId((thread as any).id);
-            fetchMessages((thread as any).id);
-            subscribeToMessages((thread as any).id);
-        }
-        setLoading(false);
-    };
-
-    const fetchMessages = async (tId: string) => {
         const { data } = await (supabase
-            .from('report_private_messages') as any)
+            .from('report_messages') as any)
             .select('*, sender:profiles(*)')
-            .eq('thread_id', tId)
+            .eq('report_id', report.id)
+            .neq('channel', 'worker')
             .order('created_at', { ascending: true });
 
         if (data) setMessages(data);
+        setLoading(false);
         scrollToBottom();
     };
 
-    const subscribeToMessages = (tId: string) => {
+    const subscribeToMessages = () => {
         const channel = supabase
-            .channel(`private_thread_${tId}`)
+            .channel(`report_messages_${report.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
-                table: 'report_private_messages',
+                table: 'report_messages',
                 schema: 'public',
-                filter: `thread_id=eq.${tId}`
+                filter: `report_id=eq.${report.id}`
             }, async (payload) => {
+                if (payload.new.channel === 'worker') return;
+
                 const { data: newMessage } = await (supabase
-                    .from('report_private_messages') as any)
+                    .from('report_messages') as any)
                     .select('*, sender:profiles(*)')
                     .eq('id', payload.new.id)
                     .single();
@@ -99,17 +75,18 @@ export const AdminPrivateThread: React.FC<AdminPrivateThreadProps> = ({ report, 
 
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inputText.trim() || !threadId) return;
+        if (!inputText.trim()) return;
 
         const text = inputText;
         setInputText('');
 
         const { error } = await (supabase
-            .from('report_private_messages') as any)
+            .from('report_messages') as any)
             .insert({
-                thread_id: threadId,
+                report_id: report.id,
                 sender_id: adminId,
-                message_text: text
+                message_text: text,
+                channel: 'admin_citizen'
             });
 
         if (error) {

@@ -4,11 +4,13 @@ import {
     Send, Radio, AlertTriangle, Megaphone,
     Users, Shield, Briefcase, Clock,
     BarChart3, History, Trash2, CheckCircle2,
-    Calendar, Bell, Eye, Info, MapPin
+    Calendar, Bell, Eye, Info, MapPin, X
 } from 'lucide-react';
 import { useOperations } from '../../hooks/useOperations';
 import { Broadcast, Department } from '../../types/reports';
 import { format } from 'date-fns';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 type TabType = 'create' | 'active' | 'scheduled' | 'expired' | 'analytics' | 'history';
 
@@ -27,25 +29,17 @@ export const BroadcastCenter: React.FC = () => {
     const [address, setAddress] = useState('');
     const [locationLat, setLocationLat] = useState<number | null>(null);
     const [locationLng, setLocationLng] = useState<number | null>(null);
-    const [isGeotagging, setIsGeotagging] = useState(false);
+    const [showMap, setShowMap] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleGeotag = () => {
-        setIsGeotagging(true);
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    setLocationLat(pos.coords.latitude);
-                    setLocationLng(pos.coords.longitude);
-                    setIsGeotagging(false);
-                },
-                (err) => {
-                    console.error(err);
-                    setIsGeotagging(false);
-                    alert("Failed to get location.");
-                }
-            );
-        }
+    const MapClickHandler = () => {
+        useMapEvents({
+            click(e) {
+                setLocationLat(e.latlng.lat);
+                setLocationLng(e.latlng.lng);
+            }
+        });
+        return null;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +62,7 @@ export const BroadcastCenter: React.FC = () => {
             setTitle(''); setMessage(''); setTargetRole('Both');
             setTargetDept(''); setPriority('Medium');
             setScheduledAt(''); setExpiresAt('');
-            setAddress(''); setLocationLat(null); setLocationLng(null);
+            setAddress(''); setLocationLat(null); setLocationLng(null); setShowMap(false);
             setActiveTab('active');
         } finally {
             setIsSubmitting(false);
@@ -193,20 +187,83 @@ export const BroadcastCenter: React.FC = () => {
 
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between px-1">
-                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">In-Situ Geotagging</label>
+                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">Pinpoint Geotag (Click Map to Drop Pin)</label>
                                                 <button
                                                     type="button"
-                                                    onClick={handleGeotag}
+                                                    onClick={() => setShowMap(!showMap)}
                                                     className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${locationLat ? 'text-green-600' : 'text-brand-secondary/40 hover:text-brand-secondary'}`}
                                                 >
                                                     <MapPin size={10} />
-                                                    {isGeotagging ? 'Triangulating...' : locationLat ? 'Signal Locked' : 'Enable Geotag'}
+                                                    {showMap ? 'Hide Map' : locationLat ? 'Signal Locked' : 'Enable Geotag'}
                                                 </button>
                                             </div>
+                                            {/* Map Modal */}
+                                            <AnimatePresence>
+                                                {showMap && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-brand-secondary/80 backdrop-blur-sm"
+                                                    >
+                                                        <motion.div
+                                                            initial={{ scale: 0.95, y: 10 }}
+                                                            animate={{ scale: 1, y: 0 }}
+                                                            exit={{ scale: 0.95, y: 10 }}
+                                                            className="bg-white p-6 rounded-[32px] w-full max-w-lg shadow-2xl relative"
+                                                        >
+                                                            <div className="flex justify-between items-center mb-6">
+                                                                <div>
+                                                                    <h3 className="text-xl font-black text-brand-secondary tracking-tight">Pinpoint Geotag location</h3>
+                                                                    <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest mt-1">Click anywhere on the tactical map to drop pin</p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowMap(false)}
+                                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-brand-secondary/5 text-brand-secondary hover:bg-red-50 hover:text-red-500 transition-all"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                            </div>
+                                                            <div className="h-[300px] w-full rounded-2xl overflow-hidden border border-brand-secondary/10 bg-brand-primary/5 relative z-0">
+                                                                <MapContainer
+                                                                    center={[locationLat || 12.9716, locationLng || 80.0435]} // Default roughly to Chennai or selected
+                                                                    zoom={10}
+                                                                    style={{ height: '100%', width: '100%', zIndex: 1 }}
+                                                                >
+                                                                    <TileLayer
+                                                                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                                                        attribution="&copy; OpenStreetMap contributors"
+                                                                    />
+                                                                    <MapClickHandler />
+                                                                    {locationLat && locationLng && (
+                                                                        <Marker position={[locationLat, locationLng]} />
+                                                                    )}
+                                                                </MapContainer>
+                                                            </div>
+                                                            <div className="mt-6 flex justify-between items-center bg-brand-secondary/5 p-4 rounded-2xl border border-brand-secondary/5">
+                                                                <div>
+                                                                    <p className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest mb-1">Current coordinates</p>
+                                                                    <p className="text-xs font-black text-brand-secondary">
+                                                                        {locationLat ? `${locationLat.toFixed(5)}, ${locationLng?.toFixed(5)}` : 'Awaiting Selection...'}
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowMap(false)}
+                                                                    className="px-6 py-3 bg-brand-secondary text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:opacity-90"
+                                                                >
+                                                                    Confirm & Close
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                             <input
                                                 type="text" value={address} onChange={e => setAddress(e.target.value)}
                                                 placeholder="Deployment address or landmark..."
-                                                className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-5 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 placeholder:text-brand-secondary/20 font-bold"
+                                                className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-5 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 placeholder:text-brand-secondary/20 font-bold mt-2"
                                             />
                                             {locationLat && (
                                                 <p className="text-[8px] font-black text-brand-secondary/20 uppercase tracking-widest mt-1">
@@ -329,7 +386,7 @@ export const BroadcastCenter: React.FC = () => {
                     )}
                 </AnimatePresence>
             </div>
-        </section>
+        </section >
     );
 };
 

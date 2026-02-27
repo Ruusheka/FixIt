@@ -7,6 +7,9 @@ export interface Profile {
     full_name: string | null;
     role: 'citizen' | 'worker' | 'admin';
     avatar_url?: string;
+    phone?: string;
+    ward?: string;
+    created_at?: string;
 }
 
 export interface Report {
@@ -44,12 +47,12 @@ export interface Report {
     updates_count?: number;
 }
 
-export interface ReportUpdate {
+export interface ReportActivityLog {
     id: string;
     report_id: string;
-    updated_by: string;
-    update_text: string;
-    status_after_update: ReportStatus;
+    actor_id: string;
+    action_type: string;
+    details: any;
     created_at: string;
     updater?: Profile;
 }
@@ -65,7 +68,7 @@ export interface ReportComment {
 
 export interface PrivateMessage {
     id: string;
-    thread_id: string;
+    report_id: string;
     sender_id: string;
     message_text: string;
     created_at: string;
@@ -101,9 +104,10 @@ export interface Worker {
     status: 'available' | 'busy' | 'on_leave';
     is_active: boolean;
     joined_at: string;
+    last_assigned_at?: string;
     profile?: Profile;
     department?: Department;
-    metrics?: WorkerMetrics;
+    metrics?: WorkerMetrics[];
 }
 
 export interface WorkerMetrics {
@@ -114,7 +118,30 @@ export interface WorkerMetrics {
     total_overdue: number;
     avg_resolution_time?: string;
     performance_score: number;
+    rating_avg?: number;
+    rework_count?: number;
+    badge_level?: string;
     last_updated: string;
+}
+
+export interface WorkerRating {
+    id: string;
+    report_id: string;
+    worker_id: string;
+    rating: number;
+    remark: string;
+    rated_by: string;
+    rated_at: string;
+}
+
+export interface WorkerAdminMessage {
+    id: string;
+    report_id: string;
+    sender_id: string;
+    sender_role: 'admin' | 'worker';
+    message: string;
+    read_status: boolean;
+    created_at: string;
 }
 
 export interface Escalation {
@@ -158,18 +185,17 @@ export interface AdminActivityLog {
     admin?: Profile;
 }
 
-export interface WorkProof {
+export interface ResolutionProof {
     id: string;
     report_id: string;
     worker_id: string;
-    image_url: string;
-    description: string;
-    submitted_at: string;
-    verified: boolean;
-    verified_by?: string;
+    before_image_url: string;
+    after_image_url: string;
+    admin_notes: string;
+    created_at: string;
     verified_at?: string;
+    verified_by?: string;
     worker?: Profile;
-    verifier?: Profile;
 }
 
 export interface ReportVerificationLog {

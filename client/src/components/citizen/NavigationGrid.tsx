@@ -23,7 +23,7 @@ const navItems: NavItem[] = [
     {
         label: 'My Reports',
         icon: <FileText className="w-5 h-5" />,
-        path: '#my-reports',
+        path: '/citizen/reports',
         description: 'Track your submitted tickets',
     },
     {

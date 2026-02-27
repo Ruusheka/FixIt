@@ -41,9 +41,20 @@ export const Login: React.FC = () => {
 
             const profile = profileData as { role: string };
 
+            // Check if selected role has been changed (if user forgets to select but is correct role, just let them in)
             if (profile.role !== selectedRole) {
-                await signOut();
-                throw new Error(`Unauthorized: Your account is registered as ${profile.role}, not ${selectedRole}.`);
+                // Instead of blocking, just route them to their actual role to prevent friction
+                const actualRoutes = {
+                    citizen: '/citizen',
+                    worker: '/worker',
+                    admin: '/admin'
+                };
+                if (!actualRoutes[profile.role as keyof typeof actualRoutes]) {
+                    await signOut();
+                    throw new Error(`Unauthorized Account Type Detected.`);
+                }
+                navigate(actualRoutes[profile.role as keyof typeof actualRoutes]);
+                return;
             }
 
             // Route based on role
@@ -132,10 +143,10 @@ export const Login: React.FC = () => {
                             <motion.div
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="bg-brand-secondary/5 border border-brand-secondary/10 p-4 rounded-xl flex items-start gap-3 mb-6"
+                                className="bg-red-500/5 border border-red-500/10 p-4 rounded-xl flex items-start gap-3 mb-6"
                             >
-                                <AlertCircle className="w-5 h-5 text-brand-secondary shrink-0 mt-0.5" />
-                                <p className="text-sm text-brand-secondary font-medium">{error}</p>
+                                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                <p className="text-sm text-red-600 font-medium">{error}</p>
                             </motion.div>
                         )}
 

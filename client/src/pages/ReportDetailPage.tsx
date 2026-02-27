@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import {
     ArrowLeft, MapPin, Clock, CheckCircle2,
     ShieldAlert, AlertTriangle, User,
-    UserPlus, Edit3, Trash2, Layers
+    UserPlus, Edit3, Trash2, Layers,
+    LayoutDashboard, FileText, Bell, Globe, Target, Award
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
 import { ReportTimeline } from '../components/reports/ReportTimeline';
@@ -75,8 +76,12 @@ export const ReportDetailPage: React.FC = () => {
     const overdue = isOverdue(report.created_at, report.status);
 
     const navItems = [
-        { label: 'Dashboard', path: '/citizen', icon: Layers },
-        { label: 'All Reports', path: '/reports', icon: Clock },
+        { label: 'Dashboard', path: '/citizen', icon: LayoutDashboard },
+        { label: 'Reports Hub', path: '/reports', icon: Globe },
+        { label: 'My Report', path: '/citizen/reports', icon: FileText },
+        { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
+        { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
+        { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
     ];
 
     return (

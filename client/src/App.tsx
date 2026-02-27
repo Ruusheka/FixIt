@@ -15,12 +15,24 @@ import { CitizenDashboard } from './pages/CitizenDashboard';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { ReportIssue } from './pages/Report';
 import { AdminDashboard } from './pages/Admin';
-import { FieldWorker } from './pages/Worker';
+import { WorkerDashboard } from './pages/worker/WorkerDashboard';
+import { TodayWork } from './pages/worker/TodayWork';
+import { WorkDetail } from './pages/worker/WorkDetail';
+import { WorkerCalendar } from './pages/worker/WorkerCalendar';
+import { WorkerCompleted } from './pages/worker/WorkerCompleted';
+import { WorkerPerformance } from './pages/worker/WorkerPerformance';
+import { WorkerMessages } from './pages/worker/WorkerMessages';
+import { WorkerProfile } from './pages/worker/WorkerProfile';
 import { ReportsPage } from './pages/ReportsPage';
 import { ReportDetailPage } from './pages/ReportDetailPage';
 import { AdminReportsHub } from './pages/AdminReportsHub';
 import { AdminReportDetail } from './pages/AdminReportDetail';
 import { AdminOperations } from './pages/AdminOperations';
+import { ProfilePage } from './pages/ProfilePage';
+import { MyReportsPage } from './pages/MyReportsPage';
+import { ReportIntelligencePage } from './pages/ReportIntelligencePage';
+import { AdminBroadcast } from './pages/AdminBroadcast';
+
 
 const AnimatedRoutes = () => {
   const { user, profile, loading } = useAuth();
@@ -50,7 +62,7 @@ const AnimatedRoutes = () => {
     if (!profile) return '/login';
     switch (profile.role) {
       case 'admin': return '/admin';
-      case 'worker': return '/worker';
+      case 'worker': return '/worker/dashboard';
       case 'citizen':
       default: return '/citizen';
     }
@@ -103,11 +115,41 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/citizen/profile"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ProfilePage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
           path="/citizen/report"
           element={
             <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
               <GlobalAnimationWrapper>
                 <ReportIssue />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/reports"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <MyReportsPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/reports/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <ReportIntelligencePage />
               </GlobalAnimationWrapper>
             </RoleProtectedRoute>
           }
@@ -136,16 +178,15 @@ const AnimatedRoutes = () => {
         />
 
         {/* Worker */}
-        <Route
-          path="/worker"
-          element={
-            <RoleProtectedRoute allowedRoles={['worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <FieldWorker />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
+        {/* Worker Portal */}
+        <Route path="/worker/dashboard" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerDashboard /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/today" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><TodayWork /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/calendar" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerCalendar /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/completed" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerCompleted /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/performance" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerPerformance /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/messages" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerMessages /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/profile" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerProfile /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+        <Route path="/worker/works/:id" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkDetail /></GlobalAnimationWrapper></RoleProtectedRoute>} />
 
         {/* Admin */}
         <Route
@@ -185,6 +226,16 @@ const AnimatedRoutes = () => {
             <RoleProtectedRoute allowedRoles={['admin']}>
               <GlobalAnimationWrapper>
                 <AdminOperations />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/broadcast"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminBroadcast />
               </GlobalAnimationWrapper>
             </RoleProtectedRoute>
           }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -7,6 +7,11 @@ import {
     List,
     RefreshCcw,
     LayoutDashboard,
+    ClipboardCheck,
+    Shield,
+    Users,
+    Radio,
+    BarChart3,
     ShieldAlert
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
@@ -14,15 +19,14 @@ import { AdminStatsSection } from '../components/admin/AdminStatsSection';
 import { AdminFilters } from '../components/admin/AdminFilters';
 import { AdminReportCard } from '../components/admin/AdminReportCard';
 import { useAdminReports } from '../hooks/useAdminReports';
-import { BarChart3, ClipboardCheck, Radio, DollarSign, Users, Shield } from 'lucide-react';
 
 const navItems = [
-    { label: 'Overview', path: '/admin', icon: BarChart3 },
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
     { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Broadcast', path: '/admin#broadcast', icon: Radio },
-    { label: 'Finances', path: '/admin#budget', icon: DollarSign },
-    { label: 'Userbase', path: '/admin#users', icon: Users },
+    { label: 'Workers', path: '/admin/workers', icon: Users },
+    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
+    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
 ];
 
 export const AdminReportsHub: React.FC = () => {
@@ -37,6 +41,26 @@ export const AdminReportsHub: React.FC = () => {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [bulkMode, setBulkMode] = useState(false);
     const [selectedReports, setSelectedReports] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
+
+    useEffect(() => {
+        const isCompletedFilter = ['closed', 'resolved', 'RESOLVED', 'CLOSED'].includes(filters.status);
+        if (isCompletedFilter) {
+            setActiveTab('completed');
+        } else if (filters.status !== 'all') {
+            setActiveTab('active');
+        }
+    }, [filters.status]);
+
+    const completedStatuses = ['closed', 'resolved', 'RESOLVED', 'CLOSED'];
+
+    const filteredReportsByTab = reports.filter(r => {
+        const isCompleted = completedStatuses.includes(r.status);
+        return activeTab === 'completed' ? isCompleted : !isCompleted;
+    });
+
+    const escalatedReports = filteredReportsByTab.filter(r => r.is_escalated);
+    const otherReports = filteredReportsByTab.filter(r => !r.is_escalated);
 
     const handleSelectReport = (id: string) => {
         setSelectedReports(prev =>
@@ -64,8 +88,6 @@ export const AdminReportsHub: React.FC = () => {
         document.body.removeChild(link);
     };
 
-    const escalatedReports = reports.filter(r => r.is_escalated);
-    const otherReports = reports.filter(r => !r.is_escalated);
 
     return (
         <MinimalLayout navItems={navItems} title="Reports Hub">
@@ -110,6 +132,24 @@ export const AdminReportsHub: React.FC = () => {
                             <Plus size={16} /> New Intel
                         </Link>
                     </div>
+                </div>
+
+                {/* Tab Switcher */}
+                <div className="flex items-center gap-8 border-b border-brand-secondary/5">
+                    <button
+                        onClick={() => setActiveTab('active')}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'active' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                    >
+                        Active Operations ({reports.filter(r => !completedStatuses.includes(r.status)).length})
+                        {activeTab === 'active' && <motion.div layoutId="hubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('completed')}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'completed' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                    >
+                        Historical Archive ({reports.filter(r => completedStatuses.includes(r.status)).length})
+                        {activeTab === 'completed' && <motion.div layoutId="hubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}
+                    </button>
                 </div>
 
                 {/* Stats Section */}
@@ -188,7 +228,7 @@ export const AdminReportsHub: React.FC = () => {
                         <div className="space-y-8">
                             <div className="flex items-center gap-4">
                                 <div className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">
-                                    Active Operations Archive ({otherReports.length})
+                                    {activeTab === 'active' ? 'Active Operations Archive' : 'Completed Resolution History'} ({otherReports.length})
                                 </div>
                                 <div className="h-px flex-1 bg-brand-secondary/5" />
                             </div>

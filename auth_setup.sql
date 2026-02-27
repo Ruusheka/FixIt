@@ -3,6 +3,7 @@ create table public.profiles (
   id uuid not null references auth.users(id) on delete cascade primary key,
   email text not null,
   full_name text,
+  avatar_url text,
   role text not null default 'citizen' check (role in ('citizen', 'worker', 'admin')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

@@ -11,6 +11,7 @@ export const useOperations = () => {
     const [announcements, setAnnouncements] = useState<InternalAnnouncement[]>([]);
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [activityLogs, setActivityLogs] = useState<AdminActivityLog[]>([]);
+    const [stats, setStats] = useState({ avgResolutionTime: '0h', compliance: '100%' });
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -44,6 +45,7 @@ export const useOperations = () => {
             if (data.activityLogs) setActivityLogs(data.activityLogs);
             if (data.announcements) setAnnouncements(data.announcements);
             if (data.broadcasts) setBroadcasts(data.broadcasts);
+            if (data.stats) setStats(data.stats);
         } catch (error) {
             console.error('Data Network Error:', error);
         } finally {
@@ -80,6 +82,18 @@ export const useOperations = () => {
             action,
             target_type: targetType,
             target_id: targetId
+        });
+    };
+
+    const logReportActivity = async (reportId: string, actionType: string, details: any = {}) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await (supabase.from('report_activity_logs') as any).insert({
+            report_id: reportId,
+            actor_id: user.id,
+            action_type: actionType,
+            details: details
         });
     };
 
@@ -159,9 +173,30 @@ export const useOperations = () => {
         }
     };
 
+    const getReportLogs = async (reportId: string) => {
+        const { data, error } = await supabase
+            .from('report_activity_logs')
+            .select('*, actor:profiles(*)')
+            .eq('report_id', reportId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching logs:', error);
+            return [];
+        }
+        return data;
+    };
+
+    const metrics = {
+        activePersonnel: workers.filter(w => w.status === 'busy').length,
+        availablePersonnel: workers.filter(w => w.status === 'available').length,
+        avgResolutionTime: stats.avgResolutionTime,
+        compliance: stats.compliance
+    };
+
     return {
         workers, departments, escalations, slaRules, announcements, broadcasts,
-        activityLogs, loading, updateSLA, logActivity, fetchData,
-        postAnnouncement, createBroadcast, deleteBroadcast
+        activityLogs, loading, updateSLA, logActivity, logReportActivity, fetchData,
+        postAnnouncement, createBroadcast, deleteBroadcast, getReportLogs, metrics, stats
     };
 };

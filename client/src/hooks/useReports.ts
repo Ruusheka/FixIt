@@ -18,6 +18,7 @@ export interface Report {
     comments_count?: number;
     profiles?: {
         full_name: string;
+        avatar_url?: string;
     };
 }
 
@@ -33,7 +34,7 @@ export const useReports = () => {
                 .from('issues')
                 .select(`
                     *,
-                    profiles:user_id(full_name),
+                    profiles:user_id(full_name, avatar_url),
                     report_assignments(worker_id),
                     report_comments(id)
                 `)

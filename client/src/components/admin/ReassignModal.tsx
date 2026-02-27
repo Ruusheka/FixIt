@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus, ShieldAlert, Send } from 'lucide-react';
+import { X, UserPlus, ShieldAlert, Send, Clock } from 'lucide-react';
 import { Worker, Escalation } from '../../types/reports';
 
 interface ReassignModalProps {
@@ -75,14 +75,21 @@ export const ReassignModal: React.FC<ReassignModalProps> = ({
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Select Replacement Personnel</label>
                                     <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {workers.filter(w => w.status === 'available').map(worker => (
+                                        {workers.filter(w => {
+                                            if (w.status !== 'available') return false;
+                                            if (!w.last_assigned_at) return true;
+                                            const now = new Date();
+                                            const lastAssigned = new Date(w.last_assigned_at);
+                                            const diffHours = (now.getTime() - lastAssigned.getTime()) / (1000 * 60 * 60);
+                                            return diffHours >= 72; // 3 days
+                                        }).map(worker => (
                                             <button
                                                 key={worker.id}
                                                 type="button"
                                                 onClick={() => setSelectedWorkerId(worker.id)}
                                                 className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${selectedWorkerId === worker.id
-                                                        ? 'bg-brand-secondary text-white border-brand-secondary shadow-lg'
-                                                        : 'bg-white text-brand-secondary border-brand-secondary/5 hover:border-brand-secondary/20'
+                                                    ? 'bg-brand-secondary text-white border-brand-secondary shadow-lg'
+                                                    : 'bg-white text-brand-secondary border-brand-secondary/5 hover:border-brand-secondary/20'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -100,6 +107,21 @@ export const ReassignModal: React.FC<ReassignModalProps> = ({
                                                 </div>
                                                 {selectedWorkerId === worker.id && <UserPlus size={16} />}
                                             </button>
+                                        ))}
+                                        {workers.filter(w => w.status === 'available' && w.last_assigned_at && ((new Date().getTime() - new Date(w.last_assigned_at).getTime()) / (1000 * 60 * 60)) < 72).map(worker => (
+                                            <div key={worker.id} className="flex items-center justify-between p-4 rounded-2xl border border-brand-secondary/5 bg-gray-50 opacity-50 grayscale cursor-not-allowed">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-brand-secondary/5 flex items-center justify-center font-black text-xs">
+                                                        {worker.profile?.full_name?.[0] || 'W'}
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-xs font-black">{worker.profile?.full_name || 'Personnel'}</p>
+                                                        <p className="text-[8px] font-bold uppercase tracking-widest text-red-500/60 flex items-center gap-1">
+                                                            <Clock size={8} /> Cooldown: {Math.ceil(72 - (new Date().getTime() - new Date(worker.last_assigned_at!).getTime()) / (1000 * 60 * 60))}h Left
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         ))}
                                     </div>
                                 </div>

@@ -10,6 +10,7 @@ import {
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { analyzeImageWithGemini, AIAnalysisResult } from '../services/gemini';
+import { LocationPickerMap } from '../components/citizen/LocationPickerMap';
 
 // Use AIAnalysisResult from gemini service instead of local interface
 type AIAnalysis = AIAnalysisResult;
@@ -49,6 +50,11 @@ export const ReportIssue: React.FC = () => {
     const [editingDescription, setEditingDescription] = useState(false);
     const [editingTags, setEditingTags] = useState(false);
 
+    // Location state
+    const [latitude, setLatitude] = useState<number>(12.9716); // Default to Bangalore
+    const [longitude, setLongitude] = useState<number>(77.5946);
+    const [locationCaptured, setLocationCaptured] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
@@ -60,6 +66,20 @@ export const ReportIssue: React.FC = () => {
             setAiAnalysis(null);
             setAiConfirmed(false);
             setIsAnalyzing(true);
+            setLocationCaptured(false);
+
+            // Fetch initial GPS
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        setLatitude(pos.coords.latitude);
+                        setLongitude(pos.coords.longitude);
+                        setLocationCaptured(true);
+                    },
+                    (err) => console.warn("Initial GPS failed:", err),
+                    { timeout: 5000 }
+                );
+            }
 
             try {
                 // 🚀 Calls Gemini DIRECTLY from the browser — no backend round trip!
@@ -77,7 +97,10 @@ export const ReportIssue: React.FC = () => {
                     setAiAnalysis(backendData);
                     setCategory(backendData.category || 'Other');
                     setDescription(backendData.description || '');
-                    setTags(backendData.tags || []);
+                    const locTags = backendData.location_detected?.confidence > 0
+                        ? [backendData.location_detected.landmark, backendData.location_detected.street].filter(Boolean) as string[]
+                        : [];
+                    setTags([...locTags, ...(backendData.tags || [])]);
                     if (backendData.ai_failed) {
                         setAiError('AI analysis failed. Please enter details manually.');
                     }
@@ -85,7 +108,10 @@ export const ReportIssue: React.FC = () => {
                     setAiAnalysis(result);
                     setCategory(result.category);
                     setDescription(result.description);
-                    setTags(result.tags);
+                    const locTags = result.location_detected?.confidence > 0
+                        ? [result.location_detected.landmark, result.location_detected.street].filter(Boolean) as string[]
+                        : [];
+                    setTags([...locTags, ...result.tags]);
                 }
             } catch (err) {
                 console.error('Analysis Error:', err);
@@ -156,10 +182,19 @@ export const ReportIssue: React.FC = () => {
                 formData.append('ai_generated', aiAnalysis.ai_failed ? 'false' : 'true');
             }
 
-            const submitReport = async (lat: string, lng: string, addr: string) => {
+            const submitReport = async (lat: string, lng: string, gpsAddr: string) => {
+                let finalAddr = gpsAddr;
+                if (aiAnalysis && aiAnalysis.location_detected.confidence > 0) {
+                    const { street, landmark, city } = aiAnalysis.location_detected;
+                    const parts = [street, landmark, city].filter(Boolean);
+                    if (parts.length > 0) {
+                        finalAddr = `${parts.join(', ')} (via AI)`;
+                    }
+                }
+
                 formData.append('latitude', lat);
                 formData.append('longitude', lng);
-                formData.append('address', addr);
+                formData.append('address', finalAddr);
 
                 const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/issues`, {
                     method: 'POST',
@@ -178,10 +213,8 @@ export const ReportIssue: React.FC = () => {
                 setLoading(false);
             };
 
-            navigator.geolocation.getCurrentPosition(
-                (pos) => submitReport(pos.coords.latitude.toString(), pos.coords.longitude.toString(), 'GPS Location'),
-                () => submitReport('28.6139', '77.2090', 'Manual Origin')
-            );
+            // Use the pinpointed coordinates from state
+            await submitReport(latitude.toString(), longitude.toString(), locationCaptured ? 'GPS Verified' : 'Manual Pinpoint');
         } catch (error) {
             console.error(error);
             setLoading(false);
@@ -467,17 +500,41 @@ export const ReportIssue: React.FC = () => {
                                         </div>
 
                                         {/* Location detected */}
-                                        {aiAnalysis.location_detected.confidence > 0 && (
-                                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
-                                                <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                                                <div>
-                                                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Location Detected ({aiAnalysis.location_detected.confidence}% Confidence)</p>
-                                                    <p className="text-[10px] font-bold text-blue-500/80 uppercase tracking-wide">
-                                                        {[aiAnalysis.location_detected.street, aiAnalysis.location_detected.landmark, aiAnalysis.location_detected.city].filter(Boolean).join(' · ')}
-                                                    </p>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Deployment Coordinates</span>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${locationCaptured ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-brand-secondary/40">
+                                                        {locationCaptured ? 'GPS Active' : 'Manual Overide'}
+                                                    </span>
                                                 </div>
                                             </div>
-                                        )}
+
+                                            <div className="h-48 w-full relative z-0">
+                                                <LocationPickerMap
+                                                    lat={latitude}
+                                                    lng={longitude}
+                                                    onChange={(newLat, newLng) => {
+                                                        setLatitude(newLat);
+                                                        setLongitude(newLng);
+                                                        setLocationCaptured(false); // Flag as manual once moved
+                                                    }}
+                                                />
+                                            </div>
+
+                                            {aiAnalysis.location_detected.confidence > 0 && (
+                                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
+                                                    <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Contextual Suggestion</p>
+                                                        <p className="text-[10px] font-bold text-blue-500/80 uppercase tracking-wide">
+                                                            {[aiAnalysis.location_detected.street, aiAnalysis.location_detected.landmark, aiAnalysis.location_detected.city].filter(Boolean).join(' · ')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
 
                                         {/* Accept/Confirm Row */}
                                         <div className="pt-4 border-t border-brand-secondary/5">

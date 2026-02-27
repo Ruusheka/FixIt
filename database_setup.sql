@@ -51,3 +51,17 @@ create policy "Public Access"
 create policy "Public Upload"
   on storage.objects for insert
   with check ( bucket_id = 'issues' );
+
+-- 7. Avatars Bucket
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "Avatar Public Access"
+  on storage.objects for select
+  using ( bucket_id = 'avatars' );
+
+create policy "Avatar Upload Access"
+  on storage.objects for insert
+  with check ( bucket_id = 'avatars' );
+

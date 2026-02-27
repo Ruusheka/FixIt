@@ -11,7 +11,8 @@ import {
     ChevronRight,
     Activity,
     Zap,
-    Sparkles
+    Sparkles,
+    CheckCircle2
 } from 'lucide-react';
 import { Report } from '../../types/reports';
 import { Link } from 'react-router-dom';
@@ -61,9 +62,14 @@ export const AdminReportCard: React.FC<AdminReportCardProps> = ({
         assigned: 'bg-blue-500/10 text-blue-700 border-blue-500/20',
         in_progress: 'bg-orange-500/10 text-orange-700 border-orange-500/20',
         awaiting_verification: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
+        under_review: 'bg-amber-500/10 text-amber-700 border-amber-500/20',
         reopened: 'bg-red-500/10 text-red-700 border-red-500/20',
         closed: 'bg-green-500/10 text-green-700 border-green-500/20',
+        resolved: 'bg-green-500/10 text-green-700 border-green-500/20',
+        RESOLVED: 'bg-green-500/10 text-green-700 border-green-500/20',
     };
+
+    const statusClass = statusColors[report.status] || 'bg-brand-secondary/5 text-brand-secondary border-brand-secondary/10';
 
     const priorityColors: Record<string, string> = {
         Low: 'border-blue-500/10 text-blue-500',
@@ -113,7 +119,7 @@ export const AdminReportCard: React.FC<AdminReportCardProps> = ({
                     <div className="flex-1 flex flex-col space-y-4 min-w-0">
                         {/* Top Badges */}
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${statusColors[report.status]}`}>
+                            <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${statusClass}`}>
                                 {report.status.replace('_', ' ')}
                             </span>
                             <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.15em] border rounded-lg ${priorityColors[report.priority] || 'border-brand-secondary/10 text-brand-secondary/60'}`}>
@@ -138,6 +144,11 @@ export const AdminReportCard: React.FC<AdminReportCardProps> = ({
                             {report.is_escalated && (
                                 <span className="px-2 py-0.5 bg-red-700 text-white text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1 shadow-md shadow-red-700/10">
                                     <ShieldAlert size={10} /> {report.is_auto_escalated ? 'Auto-Escalated' : 'Escalated'}
+                                </span>
+                            )}
+                            {['closed', 'resolved', 'RESOLVED'].includes(report.status.toLowerCase()) && (
+                                <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full flex items-center gap-2 shadow-lg shadow-green-500/20 animate-in fade-in zoom-in duration-500">
+                                    <CheckCircle2 size={12} className="text-white" /> MISSION COMPLETE
                                 </span>
                             )}
                             {report.ai_generated && (
@@ -173,7 +184,11 @@ export const AdminReportCard: React.FC<AdminReportCardProps> = ({
                                 <span className="truncate">{timeAgo}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs font-bold text-brand-secondary/40" title={report.reporter?.email || 'Anonymous'}>
-                                <User size={14} className="shrink-0" />
+                                {report.reporter?.avatar_url ? (
+                                    <img src={report.reporter.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover ring-1 ring-brand-secondary/10" />
+                                ) : (
+                                    <User size={14} className="shrink-0" />
+                                )}
                                 <span className="truncate">
                                     {report.reporter?.full_name || (report.reporter?.email ? report.reporter.email.split('@')[0] : 'Anonymous')}
                                 </span>
@@ -201,9 +216,13 @@ export const AdminReportCard: React.FC<AdminReportCardProps> = ({
                                     className="w-7 h-7 rounded-full border-2 border-white bg-brand-primary flex items-center justify-center overflow-hidden shadow-sm"
                                     title={a.worker.full_name || a.worker.email}
                                 >
-                                    <span className="text-[10px] font-black text-brand-secondary/40">
-                                        {(a.worker.full_name?.[0] || a.worker.email[0]).toUpperCase()}
-                                    </span>
+                                    {a.worker.avatar_url ? (
+                                        <img src={a.worker.avatar_url} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <span className="text-[10px] font-black text-brand-secondary/40">
+                                            {(a.worker.full_name?.[0] || a.worker.email[0]).toUpperCase()}
+                                        </span>
+                                    )}
                                 </div>
                             ))}
                             {report.assignments && report.assignments.length > 3 && (

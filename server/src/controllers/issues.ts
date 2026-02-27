@@ -128,7 +128,7 @@ export const getIssues = async (req: Request, res: Response) => {
 export const updateStatus = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const updates = req.body; // Allows passing { priority: 'High' } or { status: 'in_progress' }
 
         // Fetch current status to check for lock
         const { data: currentIssue, error: fetchError } = await supabase
@@ -144,7 +144,7 @@ export const updateStatus = async (req: Request, res: Response) => {
 
         const { data, error } = await supabase
             .from('issues')
-            .update({ status })
+            .update(updates)
             .eq('id', id)
             .select()
             .single();
@@ -186,13 +186,13 @@ export const submitProof = async (req: Request, res: Response) => {
         const imageUrl = supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
 
         // 2. Insert work proof
-        const { error: proofError } = await supabase
-            .from('work_proofs')
+        const { error: proofError } = await (supabase
+            .from('work_proofs') as any)
             .insert([{
                 report_id: id,
                 worker_id: workerId,
-                image_url: imageUrl,
-                description
+                after_image_url: imageUrl,
+                worker_notes: description
             }]);
 
         if (proofError) throw proofError;
@@ -220,7 +220,7 @@ export const submitProof = async (req: Request, res: Response) => {
 export const verifyIssue = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { action, comment } = req.body; // 'approved' or 'rejected'
+        const { action, comment, rating } = req.body; // 'approved' or 'rejected'
         const adminId = (req as any).user?.id;
 
         if (action === 'rejected' && !comment) {
@@ -262,6 +262,16 @@ export const verifyIssue = async (req: Request, res: Response) => {
                 .single();
 
             if (assignment) {
+                if (rating) {
+                    await supabase.from('worker_ratings').insert([{
+                        report_id: id,
+                        worker_id: assignment.worker_id,
+                        rating: Number(rating),
+                        remark: comment || '',
+                        rated_by: adminId
+                    }]);
+                }
+
                 const { data: metrics } = await supabase
                     .from('worker_metrics')
                     .select('total_resolved')

@@ -68,7 +68,7 @@ Rules:
 - impact: Low | Moderate | Severe
 - risk_score: integer 0-100
 - ai_confidence: integer 0-100
-- tags: 3-6 short keywords
+- tags: 4-6 short keywords. MUST include 1-2 location-based tags if any landmark, street, or area type is visible (e.g., "near park", "main road", "residential area").
 - location_detected: fill only if clearly visible in image, else use empty strings
 - Return ONLY the raw JSON object. No other text.`;
 

@@ -17,24 +17,35 @@ import {
     TrendingUp,
     ShieldAlert,
     FileCheck,
-    Lock
+    Lock,
+    UserPlus,
+    LayoutDashboard,
+    ClipboardCheck,
+    Shield,
+    Users,
+    Radio,
+    BarChart3,
+    X,
+    Maximize2
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
-import { Report, ReportComment, ReportUpdate, ReportStatus, WorkProof } from '../types/reports';
+import { Report, ReportComment, ReportActivityLog, ReportStatus, ResolutionProof } from '../types/reports';
 import { MinimalLayout } from '../components/MinimalLayout';
 import { AdminAssignmentPanel } from '../components/admin/AdminAssignmentPanel';
 import { AdminPrivateThread } from '../components/admin/AdminPrivateThread';
+import { AdminWorkerThread } from '../components/admin/AdminWorkerThread';
 import { ProofVerificationModal } from '../components/admin/ProofVerificationModal';
 import { useAuth } from '../hooks/useAuth';
-import { BarChart3, ClipboardCheck, Radio, DollarSign, Users, Shield } from 'lucide-react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const navItems = [
-    { label: 'Overview', path: '/admin', icon: BarChart3 },
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
     { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Broadcast', path: '/admin#broadcast', icon: Radio },
-    { label: 'Finances', path: '/admin#budget', icon: DollarSign },
-    { label: 'Userbase', path: '/admin#users', icon: Users },
+    { label: 'Workers', path: '/admin/workers', icon: Users },
+    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
+    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
 ];
 
 export const AdminReportDetail: React.FC = () => {
@@ -42,21 +53,22 @@ export const AdminReportDetail: React.FC = () => {
     const { profile: adminProfile } = useAuth();
     const [report, setReport] = useState<Report | null>(null);
     const [comments, setComments] = useState<ReportComment[]>([]);
-    const [updates, setUpdates] = useState<ReportUpdate[]>([]);
-    const [proofs, setProofs] = useState<WorkProof[]>([]);
+    const [logs, setLogs] = useState<ReportActivityLog[]>([]);
+    const [proofs, setProofs] = useState<ResolutionProof[]>([]);
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
-    const [activeTab, setActiveTab] = useState<'public' | 'private' | 'timeline' | 'proofs'>('public');
+    const [activeTab, setActiveTab] = useState<'public' | 'private' | 'worker' | 'timeline' | 'proofs'>('public');
     const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
     const fetchReportData = async () => {
         if (!id) return;
 
-        const [reportRes, commentsRes, updatesRes, proofsRes] = await Promise.all([
+        const [reportRes, commentsRes, logsRes, proofsRes] = await Promise.all([
             supabase.from('issues').select('*, reporter:profiles!user_id(id, email, full_name, role), assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role))').eq('id', id).single(),
             supabase.from('report_comments').select('*, user:profiles(id, email, full_name, role)').eq('report_id', id).order('created_at', { ascending: true }),
-            supabase.from('report_updates').select('*, updater:profiles(id, full_name, email, role)').eq('report_id', id).order('created_at', { ascending: false }),
-            supabase.from('work_proofs').select('*, worker:profiles!worker_id(id, full_name, email)').eq('report_id', id).order('submitted_at', { ascending: false })
+            supabase.from('report_activity_logs').select('*, updater:profiles(id, full_name, email, role)').eq('report_id', id).order('created_at', { ascending: false }),
+            supabase.from('resolution_proofs').select('*, worker:profiles!worker_id(id, full_name, email)').eq('report_id', id).order('created_at', { ascending: false })
         ]);
 
         if ((reportRes as any).data) {
@@ -67,7 +79,7 @@ export const AdminReportDetail: React.FC = () => {
             });
         }
         if ((commentsRes as any).data) setComments((commentsRes as any).data);
-        if ((updatesRes as any).data) setUpdates((updatesRes as any).data);
+        if ((logsRes as any).data) setLogs((logsRes as any).data);
         if ((proofsRes as any).data) setProofs((proofsRes as any).data);
         setLoading(false);
     };
@@ -78,9 +90,9 @@ export const AdminReportDetail: React.FC = () => {
         // Realtime subscriptions
         const channel = supabase.channel(`report_detail_${id}`)
             .on('postgres_changes', { event: '*', table: 'issues', schema: 'public', filter: `id=eq.${id}` }, () => fetchReportData())
-            .on('postgres_changes', { event: '*', table: 'work_proofs', schema: 'public', filter: `report_id=eq.${id}` }, () => fetchReportData())
+            .on('postgres_changes', { event: '*', table: 'resolution_proofs', schema: 'public', filter: `report_id=eq.${id}` }, () => fetchReportData())
             .on('postgres_changes', { event: 'INSERT', table: 'report_comments', schema: 'public', filter: `report_id=eq.${id}` }, () => fetchReportData())
-            .on('postgres_changes', { event: 'INSERT', table: 'report_updates', schema: 'public', filter: `report_id=eq.${id}` }, () => fetchReportData())
+            .on('postgres_changes', { event: 'INSERT', table: 'report_activity_logs', schema: 'public', filter: `report_id=eq.${id}` }, () => fetchReportData())
             .subscribe();
 
         return () => {
@@ -188,13 +200,13 @@ export const AdminReportDetail: React.FC = () => {
                         )}
 
                         {report.status === 'closed' && (
-                            <div className="p-8 bg-brand-primary border border-brand-secondary/5 rounded-[32px] flex items-center gap-6">
-                                <div className="w-14 h-14 bg-green-500/10 rounded-full flex items-center justify-center text-green-600">
+                            <div className="p-8 bg-green-500 text-white rounded-[32px] flex items-center gap-6 shadow-xl shadow-green-500/20">
+                                <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-sm">
                                     <CheckCircle2 size={32} />
                                 </div>
                                 <div>
-                                    <h4 className="text-xl font-black text-brand-secondary uppercase tracking-tight">Verified & Closed</h4>
-                                    <p className="text-[10px] font-bold text-brand-secondary/40 uppercase tracking-widest">
+                                    <h4 className="text-xl font-black uppercase tracking-tight text-white">Verified & Closed</h4>
+                                    <p className="text-[10px] font-bold text-green-100 uppercase tracking-widest">
                                         Resolved on {report.resolved_at ? new Date(report.resolved_at).toLocaleString() : 'N/A'}
                                     </p>
                                 </div>
@@ -274,6 +286,7 @@ export const AdminReportDetail: React.FC = () => {
                                 {[
                                     { id: 'public', label: 'Public Discussion', icon: MessageSquare },
                                     { id: 'private', label: 'Admin-Citizen Link', icon: ShieldCheck },
+                                    { id: 'worker', label: 'Admin-Worker Link', icon: UserPlus },
                                     { id: 'timeline', label: 'Ops Log', icon: Activity },
                                     { id: 'proofs', label: 'Resolution Proofs', icon: FileCheck },
                                 ].map(tab => (
@@ -296,7 +309,7 @@ export const AdminReportDetail: React.FC = () => {
                             <AnimatePresence mode="wait">
                                 {activeTab === 'public' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="public" className="space-y-6">
-                                        <div className="minimal-card p-6 bg-white overflow-hidden flex flex-col h-[500px]">
+                                        <div className="minimal-card p-6 bg-white overflow-hidden flex flex-col h-[400px]">
                                             <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
                                                 {comments.map((comment) => (
                                                     <div key={comment.id} className="flex gap-4">
@@ -347,11 +360,17 @@ export const AdminReportDetail: React.FC = () => {
                                     </motion.div>
                                 )}
 
+                                {activeTab === 'worker' && (
+                                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="worker">
+                                        {adminProfile && <AdminWorkerThread report={report} adminId={adminProfile.id} />}
+                                    </motion.div>
+                                )}
+
                                 {activeTab === 'timeline' && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="timeline" className="space-y-4">
                                         <div className="minimal-card p-10 bg-white shadow-soft">
                                             <div className="space-y-10 border-l-2 border-brand-secondary/5 ml-4 pl-10 relative">
-                                                {updates.map((update, idx) => (
+                                                {logs.map((update, idx) => (
                                                     <div key={update.id} className="relative">
                                                         <div className="absolute -left-[54px] top-0 p-2 bg-white border-2 border-brand-secondary/5 rounded-xl text-brand-secondary/40 shadow-sm">
                                                             <Activity size={12} />
@@ -361,11 +380,11 @@ export const AdminReportDetail: React.FC = () => {
                                                                 <p className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">{update.updater?.full_name || 'SYSTEM CORE'}</p>
                                                                 <span className="text-[9px] font-bold text-brand-secondary/20 uppercase tracking-widest">{new Date(update.created_at).toLocaleString()}</span>
                                                             </div>
-                                                            <p className="text-sm font-bold text-brand-secondary/60">{update.update_text}</p>
-                                                            {update.status_after_update && (
+                                                            <p className="text-sm font-bold text-brand-secondary/60">{(update as any).details?.message || (update as any).update_text}</p>
+                                                            {(update as any).details?.status_after && (
                                                                 <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-brand-secondary/5 border border-brand-secondary/10 rounded-full">
                                                                     <div className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
-                                                                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-secondary">Status: {update.status_after_update.replace(/_/g, ' ')}</span>
+                                                                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-secondary">Status: {(update as any).details.status_after.replace(/_/g, ' ')}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -391,12 +410,23 @@ export const AdminReportDetail: React.FC = () => {
                                             {proofs.map((proof) => (
                                                 <div
                                                     key={proof.id}
-                                                    onClick={() => proof.verified === false && setShowVerifyModal(true)}
-                                                    className={`minimal-card p-6 bg-white overflow-hidden space-y-4 group cursor-pointer transition-all ${proof.verified ? 'opacity-80' : 'ring-2 ring-amber-500/20'}`}
+                                                    onClick={() => !proof.verified_at && setShowVerifyModal(true)}
+                                                    className={`minimal-card p-6 bg-white overflow-hidden space-y-4 group cursor-pointer transition-all ${proof.verified_at ? 'opacity-80' : 'ring-2 ring-amber-500/20'}`}
                                                 >
-                                                    <div className="aspect-video rounded-2xl overflow-hidden relative">
-                                                        <img src={proof.image_url} alt="Proof" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="aspect-video rounded-2xl overflow-hidden relative group/img">
+                                                        <img src={proof.after_image_url || proof.before_image_url} alt="Proof" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setLightboxImage(proof.after_image_url || proof.before_image_url || null);
+                                                                }}
+                                                                className="p-3 bg-white text-brand-secondary rounded-full transform scale-50 group-hover/img:scale-100 transition-all shadow-xl hover:bg-brand-primary"
+                                                                title="View Fullscreen"
+                                                            >
+                                                                <Maximize2 size={20} />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
@@ -405,17 +435,17 @@ export const AdminReportDetail: React.FC = () => {
                                                             </div>
                                                             <div>
                                                                 <p className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">{proof.worker?.full_name || 'Worker'}</p>
-                                                                <p className="text-[9px] font-bold text-brand-secondary/20 uppercase">{new Date(proof.submitted_at).toLocaleString()}</p>
+                                                                <p className="text-[9px] font-bold text-brand-secondary/20 uppercase">{new Date(proof.created_at).toLocaleString()}</p>
                                                             </div>
                                                         </div>
-                                                        {proof.verified ? (
+                                                        {proof.verified_at ? (
                                                             <span className="px-3 py-1 bg-green-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest">VERIFIED</span>
                                                         ) : (
                                                             <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">PENDING</span>
                                                         )}
                                                     </div>
                                                     <p className="text-xs font-medium text-brand-secondary/60 leading-relaxed line-clamp-2">
-                                                        {proof.description || 'No worker notes provided.'}
+                                                        {proof.admin_notes || 'No worker notes provided.'}
                                                     </p>
                                                 </div>
                                             ))}
@@ -433,63 +463,17 @@ export const AdminReportDetail: React.FC = () => {
                     </div>
 
                     {/* Sidebar: SLA & Assignment */}
-                    <div className="space-y-10">
-                        {/* SLA Timer */}
-                        <div className={`minimal-card p-8 text-white border-none shadow-2xl relative overflow-hidden ${slaInfo?.isClosed ? 'bg-green-600' : 'bg-brand-secondary shadow-brand-secondary/10'}`}>
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-                            <div className="relative z-10 space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={18} />
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">SLA Status</h4>
-                                    </div>
-                                    {slaInfo?.isBreached && !slaInfo?.isClosed && <ShieldAlert size={18} className="text-red-400 animate-pulse" />}
-                                </div>
-
-                                <div>
-                                    <p className={`text-5xl font-black tracking-tighter ${slaInfo?.isBreached && !slaInfo?.isClosed ? 'text-red-400' : 'text-white'}`}>
-                                        {slaInfo?.isClosed ? 'CLOSED' : slaInfo?.remaining}
-                                    </p>
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">
-                                        {slaInfo?.isClosed ? 'Operational Cycle Complete' : slaInfo?.isBreached ? '72-Hour Breach Conflict' : 'Remaining Response Window'}
-                                    </p>
-                                </div>
-
-                                {!slaInfo?.isClosed && (
-                                    <div className="pt-6 border-t border-white/10 space-y-3">
-                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                            <span className="text-white/40">Operation Age</span>
-                                            <span>{slaInfo?.since} Hours</span>
-                                        </div>
-                                        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${Math.min((slaInfo?.since || 0) / 0.72, 100)}%` }}
-                                                className={`h-full ${slaInfo?.isBreached ? 'bg-red-500' : 'bg-white'}`}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {slaInfo?.isBreached && !slaInfo?.isClosed && (
-                                    <div className="p-4 bg-red-800/30 rounded-2xl border border-red-500/20 flex gap-3">
-                                        <AlertCircle size={20} className="text-red-400 shrink-0" />
-                                        <p className="text-[9px] font-bold leading-relaxed text-red-200 uppercase">
-                                            Warning: SLA Resolution window Has Elapsed. Escalate Immediately to avoid operational friction.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
+                    <div className="space-y-10 lg:pt-[220px]">
                         {/* Assignment Panel */}
                         <div className="minimal-card p-1 bg-brand-primary/5 border-brand-secondary/5">
                             <div className="bg-white rounded-[2.25rem] p-8 shadow-sm">
                                 <div className="flex items-center gap-3 mb-8 border-b border-brand-secondary/5 pb-6">
                                     <div className="p-2 bg-brand-secondary/5 rounded-xl text-brand-secondary">
-                                        <Activity size={18} />
+                                        <UserPlus size={18} />
                                     </div>
-                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-secondary">Tactical Oversight</h4>
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-secondary">
+                                        {['resolved', 'RESOLVED', 'closed', 'CLOSED'].includes(report.status) ? 'Assigned Worker' : 'Assign Worker'}
+                                    </h4>
                                 </div>
                                 <AdminAssignmentPanel report={report} onUpdate={fetchReportData} />
                             </div>
@@ -504,15 +488,40 @@ export const AdminReportDetail: React.FC = () => {
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-secondary">Geo-Intelligence</h4>
                             </div>
                             <div className="space-y-4">
-                                <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-secondary/5">
-                                    <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-widest mb-1">Target Coordinates</p>
-                                    <p className="text-xs font-black text-brand-secondary">
-                                        {report.latitude?.toFixed(6) || '0.000000'}, {report.longitude?.toFixed(6) || '0.000000'}
-                                    </p>
+                                <div className="h-48 w-full rounded-2xl overflow-hidden border border-brand-secondary/10 bg-brand-primary/5 relative z-0">
+                                    {(report.latitude && report.longitude) ? (
+                                        <MapContainer
+                                            center={[report.latitude, report.longitude]}
+                                            zoom={15}
+                                            style={{ height: '100%', width: '100%', zIndex: 1 }}
+                                            zoomControl={false}
+                                            dragging={false}
+                                            scrollWheelZoom={false}
+                                            doubleClickZoom={false}
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                                attribution="&copy; OpenStreetMap contributors"
+                                            />
+                                            <Marker position={[report.latitude, report.longitude]} />
+                                        </MapContainer>
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-brand-secondary/30 font-bold text-[10px] uppercase tracking-widest">
+                                            No GPS Data
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-secondary/5">
-                                    <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-widest mb-1">Authenticated Address</p>
-                                    <p className="text-xs font-black text-brand-secondary leading-relaxed">{report.address}</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-secondary/5">
+                                        <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-widest mb-1">Target Coordinates</p>
+                                        <p className="text-xs font-black text-brand-secondary">
+                                            {report.latitude?.toFixed(5) || '0.000'} <br /> {report.longitude?.toFixed(5) || '0.000'}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-secondary/5">
+                                        <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-widest mb-1">Authenticated Address</p>
+                                        <p className="text-xs font-black text-brand-secondary leading-relaxed line-clamp-3" title={report.address}>{report.address}</p>
+                                    </div>
                                 </div>
                                 <a
                                     href={`https://www.google.com/maps?q=${report.latitude || 0},${report.longitude || 0}`}
@@ -524,6 +533,47 @@ export const AdminReportDetail: React.FC = () => {
                                 </a>
                             </div>
                         </div>
+
+                        {/* Operational Timeline */}
+                        <div className="minimal-card p-8 bg-white space-y-6">
+                            <div className="flex items-center gap-3 border-b border-brand-secondary/5 pb-6">
+                                <div className="p-2 bg-brand-secondary/5 rounded-xl text-brand-secondary">
+                                    <Clock size={18} />
+                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-secondary">Operational Timeline</h4>
+                            </div>
+                            <div className="space-y-0 relative before:absolute before:inset-y-0 before:left-2.5 before:w-px before:bg-brand-secondary/10">
+                                {/* Reported */}
+                                <div className="relative pl-8 pb-6">
+                                    <div className="absolute left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-brand-secondary ring-4 ring-white" />
+                                    <p className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest mb-0.5">Reported</p>
+                                    <p className="text-xs font-black text-brand-secondary">{new Date(report.created_at).toLocaleString()}</p>
+                                </div>
+
+                                {/* Assigned */}
+                                {report.status !== 'reported' && (
+                                    <div className="relative pl-8 pb-6">
+                                        <div className="absolute left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-yellow-500 ring-4 ring-white" />
+                                        <p className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest mb-0.5">Assigned to Field</p>
+                                        <p className="text-xs font-black text-brand-secondary">
+                                            {logs.find(l => typeof l.action_type === 'string' && l.action_type.includes('assigned'))?.created_at ? new Date(logs.find(l => typeof l.action_type === 'string' && l.action_type.includes('assigned'))!.created_at).toLocaleString() : 'N/A'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Completed */}
+                                {['resolved', 'RESOLVED', 'closed', 'CLOSED'].includes(report.status) && (
+                                    <div className="relative pl-8">
+                                        <div className="absolute left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-green-500 ring-4 ring-white" />
+                                        <p className="text-[9px] font-black text-green-600/60 uppercase tracking-widest mb-0.5">Completion Verified</p>
+                                        <p className="text-xs font-black text-green-600">
+                                            {report.resolved_at ? new Date(report.resolved_at).toLocaleString() : 'N/A'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -539,6 +589,33 @@ export const AdminReportDetail: React.FC = () => {
                         }}
                         onClose={() => setShowVerifyModal(false)}
                     />
+                )}
+
+                {/* Lightbox Modal */}
+                {lightboxImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-brand-secondary/95 backdrop-blur-xl"
+                        onClick={() => setLightboxImage(null)}
+                    >
+                        <button
+                            className="absolute top-8 right-8 p-3 bg-white/10 hover:bg-white/20 text-white flex items-center gap-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md"
+                            onClick={() => setLightboxImage(null)}
+                        >
+                            <ArrowLeft size={16} /> Back to Details
+                        </button>
+                        <motion.img
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            src={lightboxImage}
+                            alt="Resolution Proof Fullscreen"
+                            className="max-w-full max-h-[90vh] rounded-[32px] shadow-2xl shadow-black/50 object-contain"
+                            onClick={(e) => e.stopPropagation()} // Prevent click from closing when clicking image
+                        />
+                    </motion.div>
                 )}
             </AnimatePresence>
         </MinimalLayout>

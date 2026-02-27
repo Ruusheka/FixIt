@@ -32,13 +32,21 @@ export const useAdminReports = () => {
                 .from('issues')
                 .select(`
                   *,
-                  reporter:profiles!user_id(id, email, full_name, role),
-                  assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role))
+                  reporter:profiles!user_id(id, email, full_name, role, avatar_url),
+                  assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role, avatar_url))
                 `);
 
             // Apply Filters
             if (filters.status !== 'all') {
-                query = query.eq('status', filters.status);
+                if (filters.status.toLowerCase() === 'resolved') {
+                    query = query.in('status', ['resolved', 'RESOLVED', 'closed', 'CLOSED']);
+                } else if (filters.status.toLowerCase() === 'in_progress') {
+                    query = query.in('status', ['in_progress', 'IN_PROGRESS']);
+                } else if (filters.status.toLowerCase() === 'reported') {
+                    query = query.in('status', ['reported', 'REPORTED']);
+                } else {
+                    query = query.eq('status', filters.status);
+                }
             }
             if (filters.priority !== 'all') {
                 query = query.eq('priority', filters.priority);
@@ -62,8 +70,9 @@ export const useAdminReports = () => {
             // Manual Filter for Overdue (since it's a dynamic calculation usually, but we check created_at)
             if (filters.overdue) {
                 const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+                const resolvedStatuses = ['resolved', 'RESOLVED', 'closed', 'CLOSED'];
                 processedReports = processedReports.filter(r =>
-                    r.status !== 'resolved' && new Date(r.created_at) < new Date(seventyTwoHoursAgo)
+                    !resolvedStatuses.includes(r.status) && new Date(r.created_at) < new Date(seventyTwoHoursAgo)
                 );
             }
 

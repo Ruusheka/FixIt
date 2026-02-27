@@ -70,7 +70,7 @@ export const AdminFilters: React.FC<AdminFiltersProps> = ({
                 <div className="flex flex-wrap items-center gap-3">
                     {/* Quick Status Filter */}
                     <div className="flex bg-brand-primary/10 p-1 rounded-2xl gap-1">
-                        {['all', 'reported', 'in_progress', 'resolved'].map((s) => (
+                        {['all', 'reported', 'in_progress', 'RESOLVED'].map((s) => (
                             <button
                                 key={s}
                                 onClick={() => setFilters(prev => ({ ...prev, status: s as any }))}
@@ -79,7 +79,7 @@ export const AdminFilters: React.FC<AdminFiltersProps> = ({
                                     : 'text-brand-secondary/40 hover:text-brand-secondary'
                                     }`}
                             >
-                                {s.replace('_', ' ')}
+                                {s.toLowerCase() === 'resolved' ? 'RESOLVED' : s.replace('_', ' ')}
                             </button>
                         ))}
                     </div>
