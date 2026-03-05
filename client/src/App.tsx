@@ -32,7 +32,14 @@ import { ProfilePage } from './pages/ProfilePage';
 import { MyReportsPage } from './pages/MyReportsPage';
 import { ReportIntelligencePage } from './pages/ReportIntelligencePage';
 import { AdminBroadcast } from './pages/AdminBroadcast';
-
+import { AdminMicroTaskPage } from './pages/AdminMicroTaskPage';
+import { AdminMicroTaskDetailPage } from './pages/AdminMicroTaskDetailPage';
+import { CitizenMicroTaskPage } from './pages/CitizenMicroTaskPage';
+import { CitizenMicroTaskDetailPage } from './pages/CitizenMicroTaskDetailPage';
+import { MicrotaskDiagnostic } from './pages/MicrotaskDiagnostic';
+import { RewardsPage } from './pages/RewardsPage';
+import { AdminProfilePage } from './pages/AdminProfilePage';
+import { AdminEngageCommand } from './pages/AdminEngageCommand';
 
 const AnimatedRoutes = () => {
   const { user, profile, loading } = useAuth();
@@ -145,11 +152,41 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/citizen/micro-tasks"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <CitizenMicroTaskPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/micro-tasks/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <CitizenMicroTaskDetailPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
           path="/citizen/reports/:id"
           element={
             <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
               <GlobalAnimationWrapper>
                 <ReportIntelligencePage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/citizen/rewards"
+          element={
+            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
+              <GlobalAnimationWrapper>
+                <RewardsPage />
               </GlobalAnimationWrapper>
             </RoleProtectedRoute>
           }
@@ -236,6 +273,56 @@ const AnimatedRoutes = () => {
             <RoleProtectedRoute allowedRoles={['admin']}>
               <GlobalAnimationWrapper>
                 <AdminBroadcast />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/micro-tasks"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminMicroTaskPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/micro-tasks/:id"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminMicroTaskDetailPage />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/microtask-debug"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <MicrotaskDiagnostic />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/engagement"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminEngageCommand />
+              </GlobalAnimationWrapper>
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <RoleProtectedRoute allowedRoles={['admin']}>
+              <GlobalAnimationWrapper>
+                <AdminProfilePage />
               </GlobalAnimationWrapper>
             </RoleProtectedRoute>
           }

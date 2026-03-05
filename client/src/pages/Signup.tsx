@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, CheckCircle2, Phone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export const Signup: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -20,7 +21,7 @@ export const Signup: React.FC = () => {
         setLoading(true);
 
         try {
-            await signUp(email, password, fullName);
+            await signUp(email, password, fullName, phone);
             setSuccess(true);
             setTimeout(() => navigate('/login'), 2500);
         } catch (err: any) {
@@ -127,6 +128,8 @@ export const Signup: React.FC = () => {
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-secondary/20 group-focus-within:text-brand-secondary/50 transition-colors" />
                                     <input
                                         type="text"
+                                        id="signup-fullname"
+                                        name="fullname"
                                         value={fullName}
                                         onChange={(e) => setFullName(e.target.value)}
                                         required
@@ -144,10 +147,31 @@ export const Signup: React.FC = () => {
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-secondary/20 group-focus-within:text-brand-secondary/50 transition-colors" />
                                     <input
                                         type="email"
+                                        id="signup-email"
+                                        name="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
                                         placeholder="operator@fixit.sys"
+                                        className="input-field pl-12"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-brand-secondary/40 ml-1">
+                                    Phone Number
+                                </label>
+                                <div className="relative group">
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-secondary/20 group-focus-within:text-brand-secondary/50 transition-colors" />
+                                    <input
+                                        type="tel"
+                                        id="signup-phone"
+                                        name="phone"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        required
+                                        placeholder="+91 98765 43210"
                                         className="input-field pl-12"
                                     />
                                 </div>
@@ -161,6 +185,8 @@ export const Signup: React.FC = () => {
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-secondary/20 group-focus-within:text-brand-secondary/50 transition-colors" />
                                     <input
                                         type="password"
+                                        id="signup-password"
+                                        name="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required

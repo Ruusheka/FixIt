@@ -19,10 +19,13 @@ import {
     ShieldAlert,
     UserPlus,
     MapPin,
-    ChevronRight
+    ChevronRight,
+    Target,
+    LogOut
 } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MinimalLayout } from '../components/MinimalLayout';
+import { adminNavItems } from '../constants/adminNav';
 
 // Admin components
 import { CommandHero } from '../components/admin/CommandHero';
@@ -45,14 +48,7 @@ interface Profile {
     created_at: string;
 }
 
-const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
-    { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Workers', path: '/admin/workers', icon: Users },
-    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
-    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-];
+const navItems = adminNavItems;
 
 export const AdminDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -248,9 +244,9 @@ export const AdminDashboard: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="Command Center">
-            <div className="space-y-12 pb-20">
+            <div className="space-y-12 px-4 md:px-8 pb-32">
                 {/* 1. ADMIN CONTROL HERO */}
-                <section className="relative overflow-hidden rounded-[40px] bg-brand-secondary p-12 text-white shadow-2xl">
+                <section className="relative overflow-hidden rounded-[40px] bg-brand-secondary p-8 md:p-12 text-white shadow-2xl">
                     <div className="relative z-10 max-w-2xl space-y-4">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -514,13 +510,28 @@ export const AdminDashboard: React.FC = () => {
                             {[
                                 { label: 'Assign Worker', icon: UserPlus, path: '/admin/reports' },
                                 { label: 'View Reports Hub', icon: ClipboardCheck, path: '/admin/reports' },
+                                { label: 'Deploy Micro-Task', icon: Target, path: '/admin/micro-tasks' },
                                 { label: 'Create Broadcast', icon: Radio, path: '/admin/broadcast' },
-                                { label: 'View Analytics', icon: BarChart3, path: '/admin/analytics' },
+                                { label: 'Sign Out', icon: LogOut, action: 'signout' },
                             ].map((action, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => navigate(action.path)}
-                                    className="flex items-center gap-3 px-6 py-3 bg-white border border-brand-secondary/10 rounded-2xl text-[10px] font-black text-brand-secondary uppercase tracking-widest hover:bg-brand-secondary hover:text-white hover:scale-105 transition-all shadow-card"
+                                    onClick={() => {
+                                        if (action.action === 'signout') {
+                                            const confirmSignOut = window.confirm("Are you sure you want to sign out of the Command Center?");
+                                            if (confirmSignOut) {
+                                                supabase.auth.signOut().then(() => {
+                                                    window.location.href = '/login';
+                                                });
+                                            }
+                                        } else if (action.path) {
+                                            navigate(action.path);
+                                        }
+                                    }}
+                                    className={`flex items-center gap-3 px-6 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-card ${action.action === 'signout'
+                                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-600 hover:text-white'
+                                        : 'bg-white border-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary hover:text-white'
+                                        }`}
                                 >
                                     <action.icon size={16} />
                                     {action.label}

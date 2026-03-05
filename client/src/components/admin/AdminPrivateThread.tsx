@@ -112,7 +112,7 @@ export const AdminPrivateThread: React.FC<AdminPrivateThreadProps> = ({ report, 
                         <Lock size={16} className="text-white" />
                     </div>
                     <div>
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Secure Admin Link</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">{report.title}</h4>
                         <p className="text-[9px] font-bold text-white/40 uppercase">Citizen: {report.reporter?.full_name || 'Anonymous'}</p>
                     </div>
                 </div>

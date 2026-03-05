@@ -139,7 +139,7 @@ export const AdminWorkerThread: React.FC<AdminWorkerThreadProps> = ({ report, ad
                             Field Ops Direct Link <Zap size={10} className="text-brand-primary" />
                         </h4>
                         <p className="text-[9px] font-black text-white/40 uppercase tracking-widest italic">
-                            Report ID: {report.id.split('-')[0]} // Secure Channel
+                            Report: {report.title} // Secure Channel
                         </p>
                     </div>
                 </div>

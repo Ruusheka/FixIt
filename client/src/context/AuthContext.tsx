@@ -17,11 +17,11 @@ export interface AuthContextType {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
-    signUp: (email: string, password: string, fullName: string) => Promise<void>;
+    signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
-    updateProfile: (data: { full_name?: string; avatar_url?: string }) => Promise<void>;
+    updateProfile: (data: { full_name?: string; avatar_url?: string; phone?: string; ward?: string }) => Promise<void>;
     updatePassword: (password: string) => Promise<void>;
 }
 
@@ -86,13 +86,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
-    const signUp = async (email: string, password: string, fullName: string) => {
+    const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
         const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
+                    phone: phone || '',
                 },
             },
         });
@@ -112,13 +113,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const updateProfile = async (data: { full_name?: string; avatar_url?: string; phone?: string; ward?: string }) => {
         if (!user) return;
+        const updateData: any = {};
+        if (data.full_name !== undefined) updateData.full_name = data.full_name;
+        if (data.avatar_url !== undefined) updateData.avatar_url = data.avatar_url;
+        if (data.phone !== undefined) updateData.phone = data.phone;
+        if (data.ward !== undefined) updateData.ward = data.ward;
+
         const { error } = await (supabase.from('profiles') as any)
-            .update({
-                full_name: data.full_name,
-                avatar_url: data.avatar_url,
-                phone: data.phone,
-                ward: data.ward
-            })
+            .update(updateData)
             .eq('id', user.id);
         if (error) throw error;
         await refreshProfile();

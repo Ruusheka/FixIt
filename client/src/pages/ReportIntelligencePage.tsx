@@ -48,6 +48,7 @@ export const ReportIntelligencePage: React.FC = () => {
     const [assignedOperatives, setAssignedOperatives] = useState<any[]>([]);
     const [comments, setComments] = useState<any[]>([]);
     const [newComment, setNewComment] = useState('');
+    const [activeTab, setActiveTab] = useState<'comms' | 'direct' | 'timeline'>('comms');
 
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +58,7 @@ export const ReportIntelligencePage: React.FC = () => {
         { label: 'My Report', path: '/citizen/reports', icon: FileText },
         { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
         { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
-        { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
+        { label: 'Rewards', path: '/citizen/rewards', icon: Award },
     ];
 
     useEffect(() => {
@@ -402,105 +403,152 @@ export const ReportIntelligencePage: React.FC = () => {
                     {/* MAIN COLUMN */}
                     <div className="lg:col-span-8 space-y-12">
 
-                        {/* 🔷 SECTION 3: COMMAND DIRECT (PRIVATE CHAT) */}
-                        <section className="minimal-card p-0 rounded-[2.5rem] overflow-hidden border-brand-secondary/10 shadow-2xl h-[420px] flex flex-col bg-white">
-                            <div className="p-4 border-b border-brand-secondary/10 bg-brand-secondary text-brand-primary flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                    <h4 className="text-sm font-black uppercase tracking-tighter">Command Direct (Admin Link)</h4>
-                                </div>
-                                <Radio size={14} className="opacity-40" />
+                        {/* 🔷 UNIFIED COMMS AND TIMELINE MODULE */}
+                        <section className="minimal-card p-0 rounded-[2.5rem] overflow-hidden border-brand-secondary/10 shadow-2xl h-[600px] flex flex-col bg-white">
+                            {/* Unified Header Tabs */}
+                            <div className="flex border-b border-brand-secondary/10 bg-brand-primary/5">
+                                <button
+                                    onClick={() => setActiveTab('comms')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-tighter transition-all ${activeTab === 'comms' ? 'bg-brand-primary text-brand-secondary border-b-2 border-brand-secondary' : 'text-brand-secondary/40 hover:text-brand-secondary/80 hover:bg-brand-primary/10'}`}
+                                >
+                                    <Users size={16} /> Tactical Comms
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('direct')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-tighter transition-all ${activeTab === 'direct' ? 'bg-brand-secondary text-brand-primary' : 'text-brand-secondary/40 hover:text-brand-secondary/80 hover:bg-brand-primary/10'}`}
+                                >
+                                    <Radio size={16} /> Command Direct
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse ml-1" />
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('timeline')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-black uppercase tracking-tighter transition-all ${activeTab === 'timeline' ? 'bg-brand-primary text-brand-secondary border-b-2 border-brand-secondary' : 'text-brand-secondary/40 hover:text-brand-secondary/80 hover:bg-brand-primary/10'}`}
+                                >
+                                    <Activity size={16} /> Activity Timeline
+                                </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-brand-secondary/[0.01] custom-scrollbar">
-                                {messages.map((msg) => {
-                                    const isStaff = msg.profiles?.role !== 'citizen';
-                                    return (
-                                        <div key={msg.id} className={`flex flex-col ${isStaff ? 'items-start' : 'items-end'} space-y-1`}>
-                                            <span className="text-[7px] font-black text-brand-secondary/30 uppercase px-1">
-                                                {msg.profiles?.full_name} • {format(new Date(msg.created_at), 'HH:mm')}
-                                            </span>
-                                            <div className={`px-3 py-2 rounded-xl max-w-[85%] text-[10px] font-bold uppercase shadow-sm ${isStaff
-                                                ? 'bg-brand-primary text-brand-secondary border border-brand-secondary/5'
-                                                : 'bg-brand-secondary text-brand-primary border border-brand-secondary/10'
-                                                }`}>
-                                                {msg.message_text}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                <div ref={chatEndRef} />
-                            </div>
-                            <div className="p-4 border-t border-brand-secondary/10">
-                                <form onSubmit={handleSendMessage} className="relative">
-                                    <input
-                                        type="text"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Transmit to HQ..."
-                                        className="w-full pl-5 pr-14 py-3 bg-brand-secondary/5 border-transparent focus:border-brand-secondary/10 rounded-xl text-[9px] font-black uppercase"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={!newMessage.trim()}
-                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-brand-secondary text-brand-primary flex items-center justify-center hover:scale-105 transition-all shadow-lg"
-                                    >
-                                        <Send size={14} />
-                                    </button>
-                                </form>
-                            </div>
-                        </section>
 
-                        {/* 🔷 NEW SECTION 6: TACTICAL COMMS LINK (COMMUNITY DISCUSSION) */}
-                        <section className="minimal-card p-0 rounded-[2.5rem] overflow-hidden border-brand-secondary/10 shadow-2xl h-[420px] flex flex-col bg-white">
-                            <div className="p-4 border-b border-brand-secondary/10 bg-brand-primary text-brand-secondary flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Users size={16} className="text-brand-secondary/40" />
-                                    <h4 className="text-sm font-black uppercase tracking-tighter">Tactical Comms Link</h4>
-                                </div>
-                                <Activity size={14} className="opacity-20" />
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
-                                {comments.length > 0 ? comments.map((comment) => (
-                                    <div key={comment.id} className="flex gap-3 group">
-                                        <div className="w-8 h-8 rounded-lg bg-brand-secondary/5 flex items-center justify-center flex-shrink-0">
-                                            {comment.profiles?.avatar_url ? (
-                                                <img src={comment.profiles.avatar_url} className="w-full h-full object-cover rounded-lg" />
-                                            ) : <User size={12} className="text-brand-secondary/20" />}
+                            {/* Content Area */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-brand-secondary/[0.01]">
+                                {activeTab === 'comms' && (
+                                    <div className="absolute inset-0 flex flex-col">
+                                        <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+                                            {comments.length > 0 ? comments.map((comment) => (
+                                                <div key={comment.id} className="flex gap-3 group">
+                                                    <div className="w-8 h-8 rounded-lg bg-brand-secondary/5 flex items-center justify-center flex-shrink-0">
+                                                        {comment.profiles?.avatar_url ? (
+                                                            <img src={comment.profiles.avatar_url} className="w-full h-full object-cover rounded-lg" />
+                                                        ) : <User size={12} className="text-brand-secondary/20" />}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-black uppercase text-brand-secondary">{comment.profiles?.full_name}</span>
+                                                            <span className="text-[7px] font-black text-brand-secondary/20 uppercase">{format(new Date(comment.created_at), 'H:mm')}</span>
+                                                        </div>
+                                                        <p className="text-[10px] font-medium text-brand-secondary/80 leading-relaxed bg-brand-secondary/[0.02] p-3 rounded-xl rounded-tl-none border border-brand-secondary/5 group-hover:bg-brand-secondary/5 transition-colors">
+                                                            {comment.comment_text}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                                                    <Users size={32} className="text-brand-secondary/5" />
+                                                    <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-[0.2em]">Broadcast Frequency Silent.</p>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-black uppercase text-brand-secondary">{comment.profiles?.full_name}</span>
-                                                <span className="text-[7px] font-black text-brand-secondary/20 uppercase">{format(new Date(comment.created_at), 'H:mm')}</span>
-                                            </div>
-                                            <p className="text-[10px] font-medium text-brand-secondary/80 leading-relaxed bg-brand-secondary/[0.02] p-3 rounded-xl rounded-tl-none border border-brand-secondary/5 group-hover:bg-brand-secondary/5 transition-colors">
-                                                {comment.comment_text}
-                                            </p>
+                                        <div className="p-4 border-t border-brand-secondary/10 bg-white">
+                                            <form onSubmit={handleSendComment} className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={newComment}
+                                                    onChange={(e) => setNewComment(e.target.value)}
+                                                    placeholder="Add coordination signal..."
+                                                    className="w-full pl-5 pr-14 py-3 bg-brand-secondary/5 border-transparent focus:border-brand-secondary/10 rounded-xl text-[9px] font-black uppercase"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={!newComment.trim()}
+                                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-brand-secondary text-brand-primary flex items-center justify-center hover:scale-105 transition-all shadow-lg"
+                                                >
+                                                    <Send size={14} />
+                                                </button>
+                                            </form>
                                         </div>
-                                    </div>
-                                )) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
-                                        <Users size={32} className="text-brand-secondary/5" />
-                                        <p className="text-[9px] font-black text-brand-secondary/20 uppercase tracking-[0.2em]">Broadcast Frequency Silent.</p>
                                     </div>
                                 )}
-                            </div>
-                            <div className="p-4 border-t border-brand-secondary/10">
-                                <form onSubmit={handleSendComment} className="relative">
-                                    <input
-                                        type="text"
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        placeholder="Add coordination signal..."
-                                        className="w-full pl-5 pr-14 py-3 bg-brand-secondary/5 border-transparent focus:border-brand-secondary/10 rounded-xl text-[9px] font-black uppercase"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={!newComment.trim()}
-                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-brand-secondary text-brand-primary flex items-center justify-center hover:scale-105 transition-all shadow-lg"
-                                    >
-                                        <Send size={14} />
-                                    </button>
-                                </form>
+
+                                {activeTab === 'direct' && (
+                                    <div className="absolute inset-0 flex flex-col">
+                                        <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                                            {messages.map((msg) => {
+                                                const isStaff = msg.profiles?.role !== 'citizen';
+                                                return (
+                                                    <div key={msg.id} className={`flex flex-col ${isStaff ? 'items-start' : 'items-end'} space-y-1`}>
+                                                        <span className="text-[7px] font-black text-brand-secondary/30 uppercase px-1">
+                                                            {msg.profiles?.full_name} • {format(new Date(msg.created_at), 'HH:mm')}
+                                                        </span>
+                                                        <div className={`px-3 py-2 rounded-xl max-w-[85%] text-[10px] font-bold uppercase shadow-sm ${isStaff
+                                                            ? 'bg-brand-primary text-brand-secondary border border-brand-secondary/5'
+                                                            : 'bg-brand-secondary text-brand-primary border border-brand-secondary/10'
+                                                            }`}>
+                                                            {msg.message_text}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            <div ref={chatEndRef} />
+                                        </div>
+                                        <div className="p-4 border-t border-brand-secondary/10 bg-white">
+                                            <form onSubmit={handleSendMessage} className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={newMessage}
+                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    placeholder="Transmit to HQ..."
+                                                    className="w-full pl-5 pr-14 py-3 bg-brand-secondary/5 border-transparent focus:border-brand-secondary/10 rounded-xl text-[9px] font-black uppercase"
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    disabled={!newMessage.trim()}
+                                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-brand-secondary text-brand-primary flex items-center justify-center hover:scale-105 transition-all shadow-lg"
+                                                >
+                                                    <Send size={14} />
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'timeline' && (
+                                    <div className="absolute inset-0 p-8 overflow-y-auto custom-scrollbar">
+                                        <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-brand-secondary/20 before:via-brand-secondary/10 before:to-transparent">
+                                            {logs.length > 0 ? logs.map((log, index) => (
+                                                <div key={log.id} className={`relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active`}>
+                                                    {/* Timeline Icon */}
+                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-brand-secondary/5 text-brand-secondary shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-transform duration-300 group-hover:scale-110">
+                                                        <Clock size={14} />
+                                                    </div>
+                                                    {/* Timeline Box */}
+                                                    <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-brand-secondary/5 bg-white shadow-sm transition-all duration-300 group-hover:shadow-md group-hover:border-brand-secondary/20">
+                                                        <div className="flex flex-col gap-1 mb-1">
+                                                            <div className="text-[10px] font-black uppercase text-brand-secondary/40 tracking-widest">{format(new Date(log.created_at), 'MMM dd, HH:mm')}</div>
+                                                            <div className="text-xs font-black uppercase tracking-tight text-brand-secondary line-clamp-1">{log.action_type.replace(/_/g, ' ')}</div>
+                                                        </div>
+                                                        <p className="text-[10px] font-medium text-brand-secondary/70">
+                                                            Action completed by: <span className="font-bold">{log.profiles?.full_name || 'System Operator'}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="p-8 text-center border border-dashed border-brand-secondary/10 rounded-3xl bg-white shadow-sm relative z-10">
+                                                    <Activity size={32} className="mx-auto text-brand-secondary/20 mb-3" />
+                                                    <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest">No activity recorded yet in timeline.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </div>

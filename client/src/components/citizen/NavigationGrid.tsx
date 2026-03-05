@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     Camera, FileText, MapPin, MessageSquare,
-    Trophy, Megaphone, ListChecks, UserCircle
+    Trophy, Megaphone, ListChecks, UserCircle, LogOut
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 interface NavItem {
     label: string;
@@ -38,6 +39,12 @@ const navItems: NavItem[] = [
         path: '#tasks',
         description: 'Quick civic actions near you',
     },
+    {
+        label: 'Sign Out',
+        icon: <LogOut className="w-5 h-5 text-red-500" />,
+        path: 'signout',
+        description: 'Terminate secure session',
+    },
 ];
 
 const container = {
@@ -54,8 +61,23 @@ const item = {
 
 export const NavigationGrid: React.FC = () => {
     const navigate = useNavigate();
+    const { signOut } = useAuth();
 
-    const handleClick = (path: string) => {
+    const handleClick = async (path: string) => {
+        if (path === 'signout') {
+            const confirmOut = window.confirm("Are you sure you want to terminate your session?");
+            if (confirmOut) {
+                try {
+                    await signOut();
+                } catch (e) {
+                    console.error('Sign out error:', e);
+                } finally {
+                    window.location.href = '/login';
+                }
+            }
+            return;
+        }
+
         if (path.startsWith('#')) {
             const el = document.getElementById(path.slice(1));
             el?.scrollIntoView({ behavior: 'smooth' });

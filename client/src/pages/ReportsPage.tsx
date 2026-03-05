@@ -10,16 +10,16 @@ import { ReportCard } from '../components/reports/ReportCard';
 import { useReports } from '../hooks/useReports';
 
 const filterItems = [
-    { id: 'all', label: 'All Reports' },
-    { id: 'open', label: 'Open' },
-    { id: 'in_progress', label: 'In Progress' },
-    { id: 'resolved', label: 'Resolved' },
-    { id: 'overdue', label: 'Overdue' }
+    { id: 'recent', label: 'Recent Reports' },
+    { id: 'all', label: 'All Intelligence' },
+    { id: 'open', label: 'Active Ops' },
+    { id: 'resolved', label: 'Completed' },
+    { id: 'overdue', label: 'Delayed' }
 ];
 
 export const ReportsPage: React.FC = () => {
     const { reports, loading, isOverdue, getOverdueHours } = useReports();
-    const [activeFilter, setActiveFilter] = useState('all');
+    const [activeFilter, setActiveFilter] = useState('recent');
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
@@ -27,14 +27,23 @@ export const ReportsPage: React.FC = () => {
         const matchesSearch = report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             report.description.toLowerCase().includes(searchQuery.toLowerCase());
 
-        if (activeFilter === 'all') return matchesSearch;
-
         const reportStatus = (report.status || '').toLowerCase();
+        const isResolved = reportStatus === 'resolved' || reportStatus === 'closed';
+
+        if (activeFilter === 'recent') {
+            return matchesSearch && !isResolved;
+        }
+
+        if (activeFilter === 'all') return matchesSearch;
 
         if (activeFilter === 'overdue') return matchesSearch && isOverdue(report.created_at, report.status);
 
         if (activeFilter === 'resolved') {
-            return matchesSearch && (reportStatus === 'resolved' || reportStatus === 'closed');
+            return matchesSearch && isResolved;
+        }
+
+        if (activeFilter === 'open') {
+            return matchesSearch && !isResolved;
         }
 
         return matchesSearch && reportStatus === activeFilter.toLowerCase();
@@ -46,12 +55,12 @@ export const ReportsPage: React.FC = () => {
         { label: 'My Report', path: '/citizen/reports', icon: FileText },
         { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
         { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
-        { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
+        { label: 'Rewards', path: '/citizen/rewards', icon: Award },
     ];
 
     return (
         <MinimalLayout navItems={navItems} title="Civic Intel Feed">
-            <div className="space-y-10 py-6">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-10 py-6">
                 {/* Header & Controls */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-brand-secondary/5 pb-10">
                     <div>
@@ -82,19 +91,21 @@ export const ReportsPage: React.FC = () => {
 
                 {/* Horizontal Tab Navigation */}
                 <div className="flex flex-col gap-8">
-                    <div className="flex items-center justify-center p-1 bg-brand-secondary/5 rounded-2xl w-fit mx-auto backdrop-blur-sm border border-brand-secondary/5">
-                        {filterItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setActiveFilter(item.id)}
-                                className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeFilter === item.id
-                                    ? 'bg-brand-secondary text-brand-primary shadow-xl shadow-brand-secondary/20 -translate-y-0.5'
-                                    : 'text-brand-secondary/40 hover:text-brand-secondary'
-                                    }`}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
+                    <div className="flex items-center p-1 bg-brand-secondary/5 rounded-2xl w-full md:w-fit mx-auto backdrop-blur-sm border border-brand-secondary/5 overflow-x-auto no-scrollbar">
+                        <div className="flex items-center gap-1 min-w-max">
+                            {filterItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveFilter(item.id)}
+                                    className={`px-6 md:px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFilter === item.id
+                                        ? 'bg-brand-secondary text-brand-primary shadow-xl shadow-brand-secondary/20'
+                                        : 'text-brand-secondary/40 hover:text-brand-secondary'
+                                        }`}
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Main Content Area */}
@@ -109,7 +120,7 @@ export const ReportsPage: React.FC = () => {
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+                                className="grid grid-cols-1 gap-8"
                             >
                                 {filteredReports.map((report) => (
                                     <ReportCard

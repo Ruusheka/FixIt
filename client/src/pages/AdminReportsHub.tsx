@@ -12,22 +12,17 @@ import {
     Users,
     Radio,
     BarChart3,
-    ShieldAlert
+    ShieldAlert,
+    Target
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
+import { adminNavItems } from '../constants/adminNav';
 import { AdminStatsSection } from '../components/admin/AdminStatsSection';
 import { AdminFilters } from '../components/admin/AdminFilters';
 import { AdminReportCard } from '../components/admin/AdminReportCard';
 import { useAdminReports } from '../hooks/useAdminReports';
 
-const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
-    { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Workers', path: '/admin/workers', icon: Users },
-    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
-    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-];
+const navItems = adminNavItems;
 
 export const AdminReportsHub: React.FC = () => {
     const {
@@ -91,7 +86,7 @@ export const AdminReportsHub: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="Reports Hub">
-            <div className="max-w-7xl mx-auto px-8 py-10 space-y-12">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12">
                 {/* Header Actions */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-brand-secondary/5 pb-8">
                     <div>
@@ -99,14 +94,14 @@ export const AdminReportsHub: React.FC = () => {
                             <div className="p-2 bg-brand-secondary/5 rounded-xl text-brand-secondary">
                                 <LayoutDashboard size={20} />
                             </div>
-                            <h1 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase">Civic Intelligence Hub</h1>
+                            <h1 className="text-3xl md:text-4xl font-black text-brand-secondary tracking-tighter uppercase leading-none">Civic Intelligence Hub</h1>
                         </div>
                         <p className="text-xs font-bold text-brand-secondary/30 uppercase tracking-[0.2em] leading-relaxed">
                             Real-time monitoring & strategic resource orchestration
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <button
                             onClick={() => refetch()}
                             className="p-3 bg-white border border-brand-secondary/10 rounded-2xl text-brand-secondary/40 hover:text-brand-secondary hover:bg-brand-primary/5 transition-all shadow-soft"
@@ -135,17 +130,17 @@ export const AdminReportsHub: React.FC = () => {
                 </div>
 
                 {/* Tab Switcher */}
-                <div className="flex items-center gap-8 border-b border-brand-secondary/5">
+                <div className="flex items-center gap-4 md:gap-8 border-b border-brand-secondary/5 overflow-x-auto custom-scrollbar">
                     <button
                         onClick={() => setActiveTab('active')}
-                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'active' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === 'active' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
                     >
                         Active Operations ({reports.filter(r => !completedStatuses.includes(r.status)).length})
                         {activeTab === 'active' && <motion.div layoutId="hubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveTab('completed')}
-                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'completed' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === 'completed' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
                     >
                         Historical Archive ({reports.filter(r => completedStatuses.includes(r.status)).length})
                         {activeTab === 'completed' && <motion.div layoutId="hubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}
@@ -171,18 +166,18 @@ export const AdminReportsHub: React.FC = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 20 }}
-                            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-brand-secondary text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-8 border border-white/10 backdrop-blur-xl"
+                            className="fixed bottom-10 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-max z-50 bg-brand-secondary text-white px-6 md:px-8 py-4 rounded-3xl shadow-2xl flex flex-col md:flex-row items-center gap-4 md:gap-8 border border-white/10 backdrop-blur-xl"
                         >
-                            <p className="text-xs font-black uppercase tracking-widest">
+                            <p className="text-[10px] md:text-xs font-black uppercase tracking-widest text-center">
                                 {selectedReports.length} Reports Selected
                             </p>
-                            <div className="h-6 w-px bg-white/20" />
-                            <div className="flex gap-2">
-                                <button className="px-4 py-2 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">Mark Resolved</button>
-                                <button className="px-4 py-2 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">Assign Worker</button>
+                            <div className="hidden md:block h-6 w-px bg-white/20" />
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <button className="px-4 py-2 hover:bg-white/10 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">Mark Resolved</button>
+                                <button className="px-4 py-2 hover:bg-white/10 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">Assign Worker</button>
                                 <button
                                     onClick={() => setSelectedReports([])}
-                                    className="px-4 py-2 hover:bg-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                    className="px-4 py-2 hover:bg-red-500 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all"
                                 >
                                     Cancel
                                 </button>

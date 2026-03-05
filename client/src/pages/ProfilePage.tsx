@@ -5,7 +5,7 @@ import {
     CheckCircle, AlertTriangle, BarChart3, Trophy,
     Bell, Home, Shield, LogOut, ChevronRight,
     Camera, ShieldCheck, Ticket, Zap, Car, Bus, CreditCard,
-    Phone, LayoutDashboard, FileText, Globe, Target, Award
+    Phone, LayoutDashboard, FileText, Globe, Target, Award, Save, X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../hooks/useAuth';
@@ -54,6 +54,11 @@ export const ProfilePage: React.FC = () => {
     const [recentReports, setRecentReports] = useState<Issue[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [editName, setEditName] = useState(profile?.full_name || '');
+    const [editPhone, setEditPhone] = useState(profile?.phone || '');
+    const [editWard, setEditWard] = useState(profile?.ward || '');
+    const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Use profile avatar_url directly
@@ -132,12 +137,21 @@ export const ProfilePage: React.FC = () => {
             alert("Key must be at least 6 characters.");
             return;
         }
-
         try {
             await updatePassword(newPassword);
             alert("Security parameters updated. Access key synchronized.");
         } catch (error: any) {
             alert("Security Breach: " + error.message);
+        }
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (e) {
+            console.error('Sign out error:', e);
+        } finally {
+            window.location.href = '/login';
         }
     };
 
@@ -154,7 +168,7 @@ export const ProfilePage: React.FC = () => {
         { label: 'My Report', path: '/citizen/reports', icon: FileText },
         { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
         { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
-        { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
+        { label: 'Rewards', path: '/citizen/rewards', icon: Award },
     ];
 
     if (loading) {
@@ -167,7 +181,7 @@ export const ProfilePage: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="Civic Identity Node">
-            <div className="max-w-7xl mx-auto space-y-16 py-8">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-16 py-8">
 
                 {/* 1. Identity Block */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -217,12 +231,26 @@ export const ProfilePage: React.FC = () => {
                                 <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
                                     <Mail size={16} className="text-brand-secondary/30" /> {profile?.email}
                                 </div>
-                                <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
-                                    <Phone size={16} className="text-brand-secondary/30" /> {profile?.phone || '+91 99000 00000'}
-                                </div>
-                                <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
-                                    <MapPin size={16} className="text-brand-secondary/30" /> {profile?.ward || 'Sector 7, Outer Ring Road'}
-                                </div>
+                                {editing ? (
+                                    <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
+                                        <Phone size={16} className="text-brand-secondary/30" />
+                                        <input id="citizen-edit-phone" name="citizen-edit-phone" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="+91 ..." className="bg-transparent outline-none flex-1 font-bold text-brand-secondary" />
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
+                                        <Phone size={16} className="text-brand-secondary/30" /> {profile?.phone || 'Not set'}
+                                    </div>
+                                )}
+                                {editing ? (
+                                    <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
+                                        <MapPin size={16} className="text-brand-secondary/30" />
+                                        <input id="citizen-edit-ward" name="citizen-edit-ward" value={editWard} onChange={e => setEditWard(e.target.value)} placeholder="Ward/Area" className="bg-transparent outline-none flex-1 font-bold text-brand-secondary" />
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
+                                        <MapPin size={16} className="text-brand-secondary/30" /> {profile?.ward || 'Not set'}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-4 text-xs font-bold text-brand-secondary/60 bg-brand-secondary/5 p-4 rounded-2xl">
                                     <Calendar size={16} className="text-brand-secondary/30" /> Joined {format(new Date(profile?.created_at || Date.now()), 'MMM dd, yyyy')}
                                 </div>
@@ -232,15 +260,45 @@ export const ProfilePage: React.FC = () => {
                             </div>
 
                             <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
-                                <button className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-brand-secondary text-brand-primary rounded-xl flex items-center gap-2">
-                                    <Edit3 size={14} /> Edit Identity
-                                </button>
-                                <button
-                                    onClick={handleChangePassword}
-                                    className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest border border-brand-secondary/10 rounded-xl flex items-center gap-2"
-                                >
-                                    <Lock size={14} /> Security Key
-                                </button>
+                                {editing ? (
+                                    <>
+                                        <button
+                                            onClick={async () => {
+                                                setSaving(true);
+                                                try {
+                                                    await updateProfile({ full_name: editName, phone: editPhone, ward: editWard });
+                                                    setEditing(false);
+                                                } catch (err: any) { alert('Error: ' + err.message); }
+                                                finally { setSaving(false); }
+                                            }}
+                                            disabled={saving}
+                                            className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-brand-secondary text-brand-primary rounded-xl flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            <Save size={14} /> {saving ? 'Saving...' : 'Save Changes'}
+                                        </button>
+                                        <button onClick={() => { setEditing(false); setEditName(profile?.full_name || ''); setEditPhone(profile?.phone || ''); setEditWard(profile?.ward || ''); }} className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest border border-brand-secondary/10 rounded-xl flex items-center gap-2">
+                                            <X size={14} /> Cancel
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => { setEditName(profile?.full_name || ''); setEditPhone(profile?.phone || ''); setEditWard(profile?.ward || ''); setEditing(true); }} className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-brand-secondary text-brand-primary rounded-xl flex items-center gap-2">
+                                            <Edit3 size={14} /> Edit Identity
+                                        </button>
+                                        <button
+                                            onClick={handleChangePassword}
+                                            className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest border border-brand-secondary/10 rounded-xl flex items-center gap-2"
+                                        >
+                                            <Lock size={14} /> Security Key
+                                        </button>
+                                        <button
+                                            onClick={signOut}
+                                            className="btn-secondary px-8 py-3 text-[10px] font-black uppercase tracking-widest border border-red-200 text-red-600 rounded-xl flex items-center gap-2 hover:bg-red-50 transition-colors"
+                                        >
+                                            <LogOut size={14} /> Log Out
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </motion.div>

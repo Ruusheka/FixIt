@@ -7,6 +7,9 @@ export interface Report {
     title: string;
     description: string;
     location: string;
+    latitude?: number;
+    longitude?: number;
+    risk_score?: number;
     user_id?: string;
     created_at: string;
     status: 'reported' | 'open' | 'in_progress' | 'resolved';

@@ -30,7 +30,7 @@ const navItems = [
     { label: 'My Report', path: '/citizen/reports', icon: FileText },
     { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
     { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
-    { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
+    { label: 'Rewards', path: '/citizen/rewards', icon: Award },
 ];
 
 export const MyReportsPage: React.FC = () => {
@@ -87,11 +87,11 @@ export const MyReportsPage: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="My Intelligence Feed">
-            <div className="max-w-7xl mx-auto space-y-12 py-6">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-12 py-6">
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-brand-secondary/5 pb-10">
                     <div>
-                        <h1 className="text-5xl font-black text-brand-secondary tracking-tighter uppercase mb-2">My Reports</h1>
+                        <h1 className="text-4xl md:text-5xl font-black text-brand-secondary tracking-tighter uppercase mb-2">My Reports</h1>
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary/30">Personal operational history and tactical status</p>
                     </div>
 
@@ -117,17 +117,17 @@ export const MyReportsPage: React.FC = () => {
                 </div>
 
                 {/* Tab Switcher */}
-                <div className="flex items-center gap-8 border-b border-brand-secondary/5">
+                <div className="flex items-center gap-6 md:gap-8 border-b border-brand-secondary/5 overflow-x-auto no-scrollbar">
                     <button
                         onClick={() => setActiveTab('active')}
-                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'active' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === 'active' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
                     >
                         Personnel Assignments ({reports.filter(r => !completedStatuses.includes(r.status?.toLowerCase() || '')).length})
                         {activeTab === 'active' && <motion.div layoutId="citizenHubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}
                     </button>
                     <button
                         onClick={() => setActiveTab('completed')}
-                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === 'completed' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
+                        className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === 'completed' ? 'text-brand-secondary' : 'text-brand-secondary/30 hover:text-brand-secondary/60'}`}
                     >
                         Resolved Directives ({reports.filter(r => completedStatuses.includes(r.status?.toLowerCase() || '')).length})
                         {activeTab === 'completed' && <motion.div layoutId="citizenHubTabLine" className="absolute bottom-[-1px] left-0 right-0 h-1 bg-brand-secondary rounded-full" />}

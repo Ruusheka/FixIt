@@ -41,9 +41,9 @@ export const useAdminReports = () => {
                 if (filters.status.toLowerCase() === 'resolved') {
                     query = query.in('status', ['resolved', 'RESOLVED', 'closed', 'CLOSED']);
                 } else if (filters.status.toLowerCase() === 'in_progress') {
-                    query = query.in('status', ['in_progress', 'IN_PROGRESS']);
+                    query = query.in('status', ['assigned', 'ASSIGNED', 'in_progress', 'IN_PROGRESS', 'awaiting_verification', 'AWAITING_VERIFICATION']);
                 } else if (filters.status.toLowerCase() === 'reported') {
-                    query = query.in('status', ['reported', 'REPORTED']);
+                    query = query.in('status', ['reported', 'REPORTED', 'reopened', 'REOPENED']);
                 } else {
                     query = query.eq('status', filters.status);
                 }

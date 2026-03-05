@@ -48,7 +48,7 @@ export const AdminAssignmentPanel: React.FC<AdminAssignmentPanelProps> = ({ repo
     const fetchWorkers = async () => {
         const { data: profiles } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, full_name, email, phone, role')
             .eq('role', 'worker');
 
         if (profiles) {
@@ -170,6 +170,9 @@ export const AdminAssignmentPanel: React.FC<AdminAssignmentPanelProps> = ({ repo
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-black text-green-700 uppercase tracking-widest">Currently Assigned</p>
                         <p className="text-sm font-black text-green-800 truncate">{currentAssignment.worker.full_name || 'Worker'}</p>
+                        {currentAssignment.worker.phone && (
+                            <p className="text-[9px] font-bold text-green-600/60 uppercase tracking-widest">{currentAssignment.worker.phone}</p>
+                        )}
                     </div>
                     <CheckCircle2 size={16} className="text-green-500 shrink-0" />
                 </div>
@@ -249,9 +252,16 @@ export const AdminAssignmentPanel: React.FC<AdminAssignmentPanelProps> = ({ repo
                                                     <p className={`text-xs font-black truncate ${isSelected ? 'text-white' : 'text-brand-secondary'}`}>
                                                         {worker.full_name || worker.email}
                                                     </p>
-                                                    <p className={`text-[9px] font-bold uppercase tracking-widest ${isSelected ? 'text-white/60' : 'text-brand-secondary/30'}`}>
-                                                        {load === 0 ? '✓ Available' : `${load} Active ${load === 1 ? 'Task' : 'Tasks'}`}
-                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className={`text-[9px] font-bold uppercase tracking-widest ${isSelected ? 'text-white/60' : 'text-brand-secondary/30'}`}>
+                                                            {load === 0 ? '✓ Available' : `${load} Active ${load === 1 ? 'Task' : 'Tasks'}`}
+                                                        </p>
+                                                        {worker.phone && (
+                                                            <p className={`text-[9px] font-bold uppercase tracking-widest ${isSelected ? 'text-white/40' : 'text-brand-secondary/20'}`}>
+                                                                • {worker.phone}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className={`w-2 h-2 rounded-full shrink-0 ${load === 0 ? 'bg-green-400' : load >= 3 ? 'bg-red-400' : 'bg-amber-400'}`} />

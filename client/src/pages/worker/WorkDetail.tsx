@@ -3,9 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Shield, Clock, MapPin, AlertTriangle, ArrowLeft, Camera, Send, MessageSquare, CheckCircle, Target, Image as ImageIcon, AlertOctagon, RotateCcw } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../hooks/useAuth';
-import { WorkerLayout } from '../../components/worker/WorkerLayout';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WorkerLayout } from '../../components/worker/WorkerLayout';
 import { ProofUploadModal } from '../../components/worker/ProofUploadModal';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet marker icon issue
+// @ts-ignore
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 // Deadline countdown helper
 const getDeadlineInfo = (deadline: string | null) => {
@@ -172,7 +184,7 @@ export const WorkDetail: React.FC = () => {
     const isCompleted = task.status === 'closed' || task.status === 'awaiting_verification';
 
     return (
-        <WorkerLayout title={`Op: ${task.title?.substring(0, 15) || 'Confidential'}...`}>
+        <WorkerLayout title={`Task Intel: ${task.title}`}>
             <div className="max-w-6xl mx-auto py-8">
 
                 {/* ⚠ REWORK REQUIRED BANNER */}
@@ -326,12 +338,24 @@ export const WorkDetail: React.FC = () => {
                                     <MapPin size={14} /> Geo-Target
                                 </h3>
                                 <div className="flex-1 bg-brand-secondary/5 rounded-3xl overflow-hidden border border-brand-secondary/10 relative">
-                                    <img
-                                        src={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/pin-s+cc0000(${task.longitude},${task.latitude})/${task.longitude},${task.latitude},15,0/400x300?access_token=${import.meta.env.VITE_MAPBOX_TOKEN}`}
-                                        alt="Map"
-                                        className="w-full h-full object-cover grayscale contrast-125"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                    />
+                                    {task.latitude && task.longitude ? (
+                                        <MapContainer
+                                            center={[task.latitude, task.longitude]}
+                                            zoom={15}
+                                            style={{ height: '100%', width: '100%', zIndex: 0 }}
+                                            zoomControl={false}
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                            />
+                                            <Marker position={[task.latitude, task.longitude]} />
+                                        </MapContainer>
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-brand-secondary/30 font-bold text-[10px] uppercase">
+                                            No Map Data
+                                        </div>
+                                    )}
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                         <div className="animate-ping w-8 h-8 rounded-full border-2 border-red-500 opacity-50" />
                                     </div>

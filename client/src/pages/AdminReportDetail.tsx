@@ -22,15 +22,16 @@ import {
     LayoutDashboard,
     ClipboardCheck,
     Shield,
-    Users,
     Radio,
     BarChart3,
     X,
-    Maximize2
+    Maximize2,
+    Target
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Report, ReportComment, ReportActivityLog, ReportStatus, ResolutionProof } from '../types/reports';
 import { MinimalLayout } from '../components/MinimalLayout';
+import { adminNavItems } from '../constants/adminNav';
 import { AdminAssignmentPanel } from '../components/admin/AdminAssignmentPanel';
 import { AdminPrivateThread } from '../components/admin/AdminPrivateThread';
 import { AdminWorkerThread } from '../components/admin/AdminWorkerThread';
@@ -39,14 +40,7 @@ import { useAuth } from '../hooks/useAuth';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
-    { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Workers', path: '/admin/workers', icon: Users },
-    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
-    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-];
+const navItems = adminNavItems;
 
 export const AdminReportDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -65,10 +59,10 @@ export const AdminReportDetail: React.FC = () => {
         if (!id) return;
 
         const [reportRes, commentsRes, logsRes, proofsRes] = await Promise.all([
-            supabase.from('issues').select('*, reporter:profiles!user_id(id, email, full_name, role), assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role))').eq('id', id).single(),
+            supabase.from('issues').select('*, reporter:profiles!user_id(id, email, full_name, role), assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role, phone))').eq('id', id).single(),
             supabase.from('report_comments').select('*, user:profiles(id, email, full_name, role)').eq('report_id', id).order('created_at', { ascending: true }),
             supabase.from('report_activity_logs').select('*, updater:profiles(id, full_name, email, role)').eq('report_id', id).order('created_at', { ascending: false }),
-            supabase.from('resolution_proofs').select('*, worker:profiles!worker_id(id, full_name, email)').eq('report_id', id).order('created_at', { ascending: false })
+            (supabase.from('resolution_proofs') as any).select('*').eq('report_id', id).order('created_at', { ascending: false })
         ]);
 
         if ((reportRes as any).data) {
@@ -152,8 +146,8 @@ export const AdminReportDetail: React.FC = () => {
     );
 
     return (
-        <MinimalLayout navItems={navItems} title={`Report: ${report.title.slice(0, 20)}...`}>
-            <div className="max-w-7xl mx-auto px-8 py-10">
+        <MinimalLayout navItems={navItems} title={`Operational Intel: ${report.title}`}>
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
                 {/* Header Navigation */}
                 <div className="mb-8 flex items-center justify-between">
                     <Link to="/admin/reports" className="group flex items-center gap-2 text-brand-secondary/40 hover:text-brand-secondary transition-all">

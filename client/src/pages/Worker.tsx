@@ -63,10 +63,10 @@ export const FieldWorker: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="Field Operations Hub">
-            <div className="max-w-5xl mx-auto px-6 py-10">
-                <div className="flex items-center justify-between mb-12">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 py-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                     <div>
-                        <h1 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Active Assignments</h1>
+                        <h1 className="text-3xl md:text-4xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Active Assignments</h1>
                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary/30">Current Operational Responsibility</p>
                     </div>
                     <div className="bg-brand-secondary text-white px-6 py-2 rounded-full shadow-lg shadow-brand-secondary/20">

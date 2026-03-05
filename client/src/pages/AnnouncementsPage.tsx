@@ -14,7 +14,7 @@ const navItems = [
     { label: 'My Report', path: '/citizen/reports', icon: FileText },
     { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
     { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
-    { label: 'Rewards', path: '/citizen/profile#rewards', icon: Award },
+    { label: 'Rewards', path: '/citizen/rewards', icon: Award },
 ];
 
 export const AnnouncementsPage: React.FC = () => {
@@ -81,7 +81,7 @@ export const AnnouncementsPage: React.FC = () => {
             navItems={navItems}
             title="City Alerts & Intelligence"
         >
-            <div className="max-w-5xl mx-auto space-y-12 py-8">
+            <div className="max-w-5xl mx-auto px-4 md:px-8 space-y-12 py-8">
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-brand-secondary/5 pb-12">
                     <div>
                         <div className="flex items-center gap-3 mb-4">

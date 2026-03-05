@@ -5,8 +5,9 @@ import {
     Camera, CheckCircle2, ArrowLeft,
     X, ShieldAlert, Sparkles, Zap, Tag,
     AlertTriangle, Activity, MapPin, Edit3,
-    CheckCheck, Info, Clock
+    CheckCheck, Info, Clock, LayoutDashboard, Globe, FileText, Bell, Target, Award
 } from 'lucide-react';
+import { MinimalLayout } from '../components/MinimalLayout';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { analyzeImageWithGemini, AIAnalysisResult } from '../services/gemini';
@@ -255,354 +256,365 @@ export const ReportIssue: React.FC = () => {
     const riskColors = aiAnalysis ? getRiskColor(aiAnalysis.risk_score) : null;
     const canSubmit = image && !isAnalyzing && aiConfirmed;
 
+    const navItems = [
+        { label: 'Dashboard', path: '/citizen', icon: LayoutDashboard },
+        { label: 'Reports Hub', path: '/reports', icon: Globe },
+        { label: 'My Report', path: '/citizen/reports', icon: FileText },
+        { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
+        { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
+        { label: 'Rewards', path: '/citizen/rewards', icon: Award },
+    ];
+
     return (
-        <div className="min-h-screen bg-brand-primary p-6 md:p-12 lg:p-20">
-            {/* Header */}
-            <div className="max-w-4xl mx-auto mb-12 flex items-center justify-between">
-                <motion.button initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-secondary/40 hover:text-brand-secondary transition-colors group">
-                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                    Go Back
-                </motion.button>
-                <div className="text-right">
-                    <h1 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Tactical Ingress</h1>
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary/30">Issue Data Submission Node</p>
-                </div>
-            </div>
-
-            <main className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-12">
-                {/* Left: Protocol info */}
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="minimal-card p-8 bg-brand-secondary text-brand-primary shadow-2xl shadow-brand-secondary/20">
-                        <ShieldAlert className="w-8 h-8 mb-6 opacity-40 text-brand-primary" />
-                        <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Submission Protocol</h3>
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-60 leading-relaxed mb-8">
-                            Ensure all imagery is high-contrast and clear. Position the camera at a 45° angle to the incident for optimal AI depth analysis.
-                        </p>
-                        <ul className="space-y-4">
-                            {['Clear photographic evidence', 'Active GPS lock enabled', 'Precise incident description'].map((item, i) => (
-                                <li key={i} className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div className="minimal-card p-8 border-dashed border-brand-secondary/10 flex items-center gap-4">
-                        <Sparkles className="w-5 h-5 text-brand-secondary/20 shrink-0" />
-                        <p className="text-[10px] font-bold text-brand-secondary/40 uppercase tracking-widest leading-relaxed">
-                            Gemini Vision AI will automatically categorize, score, and tag your submission.
-                        </p>
+        <MinimalLayout navItems={navItems} title="Operational Deployment">
+            <div className="max-w-4xl mx-auto space-y-12 pb-20">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <motion.button initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-secondary/40 hover:text-brand-secondary transition-colors group">
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        Go Back
+                    </motion.button>
+                    <div className="text-right">
+                        <h1 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase mb-1">Tactical Ingress</h1>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary/30">Issue Data Submission Node</p>
                     </div>
                 </div>
 
-                {/* Right: Form */}
-                <div className="lg:col-span-3">
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Dropzone */}
-                        <motion.div
-                            onDragEnter={handleDrag} onDragLeave={handleDrag}
-                            onDragOver={handleDrag} onDrop={handleDrop}
-                            onClick={() => !preview && !isAnalyzing && fileInputRef.current?.click()}
-                            className={`relative minimal-card aspect-video flex flex-col items-center justify-center p-2 overflow-hidden transition-all duration-300 
+                <main className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-12">
+                    {/* Left: Protocol info */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <div className="minimal-card p-8 bg-brand-secondary text-brand-primary shadow-2xl shadow-brand-secondary/20">
+                            <ShieldAlert className="w-8 h-8 mb-6 opacity-40 text-brand-primary" />
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-4">Submission Protocol</h3>
+                            <p className="text-xs font-bold uppercase tracking-widest opacity-60 leading-relaxed mb-8">
+                                Ensure all imagery is high-contrast and clear. Position the camera at a 45° angle to the incident for optimal AI depth analysis.
+                            </p>
+                            <ul className="space-y-4">
+                                {['Clear photographic evidence', 'Active GPS lock enabled', 'Precise incident description'].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="minimal-card p-8 border-dashed border-brand-secondary/10 flex items-center gap-4">
+                            <Sparkles className="w-5 h-5 text-brand-secondary/20 shrink-0" />
+                            <p className="text-[10px] font-bold text-brand-secondary/40 uppercase tracking-widest leading-relaxed">
+                                Gemini Vision AI will automatically categorize, score, and tag your submission.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Right: Form */}
+                    <div className="lg:col-span-3">
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {/* Dropzone */}
+                            <motion.div
+                                onDragEnter={handleDrag} onDragLeave={handleDrag}
+                                onDragOver={handleDrag} onDrop={handleDrop}
+                                onClick={() => !preview && !isAnalyzing && fileInputRef.current?.click()}
+                                className={`relative minimal-card aspect-video flex flex-col items-center justify-center p-2 overflow-hidden transition-all duration-300 
                                 ${dragActive ? 'border-brand-secondary bg-brand-secondary/5 scale-[0.99]' : 'border-brand-secondary/10'}
                                 ${!preview && !isAnalyzing && 'cursor-pointer hover:border-brand-secondary/30'}`}
-                        >
-                            <AnimatePresence mode="wait">
-                                {isAnalyzing ? (
-                                    <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-4">
-                                        <div className="w-12 h-12 border-4 border-brand-secondary/10 border-t-brand-secondary rounded-full animate-spin" />
-                                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary animate-pulse">
-                                            Analyzing image using AI…
+                            >
+                                <AnimatePresence mode="wait">
+                                    {isAnalyzing ? (
+                                        <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-4">
+                                            <div className="w-12 h-12 border-4 border-brand-secondary/10 border-t-brand-secondary rounded-full animate-spin" />
+                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary animate-pulse">
+                                                Analyzing image using AI…
+                                            </div>
+                                            <div className="text-[9px] text-brand-secondary/30 uppercase tracking-widest font-bold">
+                                                Gemini Vision • Risk Scoring • Tag Detection
+                                            </div>
+                                        </motion.div>
+                                    ) : preview ? (
+                                        <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative w-full h-full rounded-xl overflow-hidden">
+                                            <img src={preview} alt="Capture" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-brand-secondary/10" />
+                                            <button type="button" onClick={clearImage}
+                                                className="absolute top-4 right-4 p-2 bg-brand-primary/80 backdrop-blur-md rounded-full text-brand-secondary hover:bg-brand-primary transition-all shadow-xl">
+                                                <X size={20} />
+                                            </button>
+                                            <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-brand-primary/80 backdrop-blur-md rounded-lg border border-brand-secondary/5">
+                                                <Sparkles size={12} className="text-brand-secondary" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">AI Analyzed</span>
+                                            </div>
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div key="upload" className="text-center p-8">
+                                            <div className="w-16 h-16 rounded-3xl bg-brand-secondary/5 border border-brand-secondary/5 flex items-center justify-center mx-auto mb-6">
+                                                <Camera className="w-8 h-8 text-brand-secondary opacity-40" />
+                                            </div>
+                                            <h4 className="text-sm font-black text-brand-secondary uppercase tracking-widest mb-2">Initialize Capture</h4>
+                                            <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest">Tap for camera or drag image here</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileInput} className="hidden" />
+                            </motion.div>
+
+                            {/* AI Error */}
+                            <AnimatePresence>
+                                {aiError && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                        className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-start gap-4">
+                                        <ShieldAlert className="text-orange-500 shrink-0 mt-1" size={18} />
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">AI Analysis Failed</div>
+                                            <div className="text-[10px] font-bold text-orange-500/60 uppercase tracking-tight leading-relaxed">{aiError}</div>
+                                            <div className="text-[9px] font-black text-orange-400/60 uppercase tracking-widest mt-1">You can still submit manually using the fields below.</div>
                                         </div>
-                                        <div className="text-[9px] text-brand-secondary/30 uppercase tracking-widest font-bold">
-                                            Gemini Vision • Risk Scoring • Tag Detection
-                                        </div>
-                                    </motion.div>
-                                ) : preview ? (
-                                    <motion.div key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative w-full h-full rounded-xl overflow-hidden">
-                                        <img src={preview} alt="Capture" className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-brand-secondary/10" />
-                                        <button type="button" onClick={clearImage}
-                                            className="absolute top-4 right-4 p-2 bg-brand-primary/80 backdrop-blur-md rounded-full text-brand-secondary hover:bg-brand-primary transition-all shadow-xl">
-                                            <X size={20} />
-                                        </button>
-                                        <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-brand-primary/80 backdrop-blur-md rounded-lg border border-brand-secondary/5">
-                                            <Sparkles size={12} className="text-brand-secondary" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-secondary">AI Analyzed</span>
-                                        </div>
-                                    </motion.div>
-                                ) : (
-                                    <motion.div key="upload" className="text-center p-8">
-                                        <div className="w-16 h-16 rounded-3xl bg-brand-secondary/5 border border-brand-secondary/5 flex items-center justify-center mx-auto mb-6">
-                                            <Camera className="w-8 h-8 text-brand-secondary opacity-40" />
-                                        </div>
-                                        <h4 className="text-sm font-black text-brand-secondary uppercase tracking-widest mb-2">Initialize Capture</h4>
-                                        <p className="text-[10px] font-bold text-brand-secondary/30 uppercase tracking-widest">Tap for camera or drag image here</p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-                            <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileInput} className="hidden" />
-                        </motion.div>
 
-                        {/* AI Error */}
-                        <AnimatePresence>
-                            {aiError && (
-                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                                    className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-start gap-4">
-                                    <ShieldAlert className="text-orange-500 shrink-0 mt-1" size={18} />
-                                    <div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1">AI Analysis Failed</div>
-                                        <div className="text-[10px] font-bold text-orange-500/60 uppercase tracking-tight leading-relaxed">{aiError}</div>
-                                        <div className="text-[9px] font-black text-orange-400/60 uppercase tracking-widest mt-1">You can still submit manually using the fields below.</div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* AI VERIFICATION CARD */}
-                        <AnimatePresence>
-                            {aiAnalysis && !isAnalyzing && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 16 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -16 }}
-                                    className={`minimal-card border p-0 overflow-hidden ${riskColors?.light || 'border-brand-secondary/10'}`}
-                                >
-                                    {/* Card Header */}
-                                    <div className={`px-8 py-5 flex items-center justify-between ${riskColors?.bg || 'bg-brand-secondary'} text-white`}>
-                                        <div className="flex items-center gap-3">
-                                            <Activity size={18} />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Gemini Intelligence Report</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[9px] font-black uppercase tracking-widest opacity-70">Confidence</span>
-                                            <span className="text-sm font-black">{aiAnalysis.ai_confidence}%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-8 space-y-6">
-                                        {/* Risk Score Bar */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-[0.2em]">Risk Score</span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-2xl font-black ${riskColors?.text}`}>{aiAnalysis.risk_score}</span>
-                                                    <span className="text-[9px] font-black text-brand-secondary/20">/100</span>
-                                                    <span className={`ml-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${riskColors?.badge}`}>
-                                                        {aiAnalysis.severity}
-                                                    </span>
-                                                </div>
+                            {/* AI VERIFICATION CARD */}
+                            <AnimatePresence>
+                                {aiAnalysis && !isAnalyzing && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -16 }}
+                                        className={`minimal-card border p-0 overflow-hidden ${riskColors?.light || 'border-brand-secondary/10'}`}
+                                    >
+                                        {/* Card Header */}
+                                        <div className={`px-8 py-5 flex items-center justify-between ${riskColors?.bg || 'bg-brand-secondary'} text-white`}>
+                                            <div className="flex items-center gap-3">
+                                                <Activity size={18} />
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Gemini Intelligence Report</span>
                                             </div>
-                                            <div className="w-full h-2 bg-brand-secondary/5 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${aiAnalysis.risk_score}%` }}
-                                                    transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
-                                                    className={`h-full rounded-full ${riskColors?.bg}`}
-                                                />
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[9px] font-black uppercase tracking-widest opacity-70">Confidence</span>
+                                                <span className="text-sm font-black">{aiAnalysis.ai_confidence}%</span>
                                             </div>
                                         </div>
 
-                                        {/* Meta badges */}
-                                        <div className="flex flex-wrap gap-3">
-                                            <div className="flex items-center gap-2 px-3 py-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/5">
-                                                <Clock size={12} className="text-brand-secondary/40" />
-                                                <span className="text-[9px] font-black text-brand-secondary/60 uppercase tracking-widest">{aiAnalysis.urgency}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 px-3 py-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/5">
-                                                <AlertTriangle size={12} className="text-brand-secondary/40" />
-                                                <span className="text-[9px] font-black text-brand-secondary/60 uppercase tracking-widest">Impact: {aiAnalysis.impact}</span>
-                                            </div>
-                                            {aiAnalysis.risk_score >= 80 && (
-                                                <div className="flex items-center gap-2 px-3 py-2 bg-red-500 rounded-xl">
-                                                    <Zap size={12} className="text-white" />
-                                                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Auto-Escalate</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Editable Category */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Detected Issue</span>
-                                                <button type="button" onClick={() => setEditingCategory(!editingCategory)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
-                                                    <Edit3 size={10} /> Edit
-                                                </button>
-                                            </div>
-                                            {editingCategory ? (
-                                                <select value={category} onChange={e => { setCategory(e.target.value); setEditingCategory(false); }}
-                                                    className="w-full input-field py-3 bg-white text-[11px] font-black uppercase tracking-widest">
-                                                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                            ) : (
-                                                <div className="flex items-center gap-3 px-4 py-3 bg-brand-secondary/5 rounded-2xl border border-brand-secondary/5">
-                                                    <MapPin size={16} className="text-brand-secondary/20" />
-                                                    <span className="text-sm font-black text-brand-secondary uppercase tracking-tight">{category || 'Other'}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Editable Description */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">AI Description</span>
-                                                <button type="button" onClick={() => setEditingDescription(!editingDescription)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
-                                                    <Edit3 size={10} /> Edit
-                                                </button>
-                                            </div>
-                                            {editingDescription ? (
-                                                <textarea value={description} onChange={e => setDescription(e.target.value)}
-                                                    onBlur={() => setEditingDescription(false)}
-                                                    rows={3} autoFocus
-                                                    className="w-full input-field py-3 bg-white text-[11px] font-bold resize-none" />
-                                            ) : (
-                                                <p className="text-sm text-brand-secondary/60 leading-relaxed font-medium px-4 py-3 bg-brand-secondary/5 rounded-2xl border border-brand-secondary/5">
-                                                    {description || 'No description generated.'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Editable Tags */}
-                                        <div>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Auto Tags</span>
-                                                <button type="button" onClick={() => setEditingTags(!editingTags)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
-                                                    <Tag size={10} /> {editingTags ? 'Done' : 'Edit'}
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {tags.map(tag => (
-                                                    <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-secondary text-brand-primary rounded-full text-[9px] font-black uppercase tracking-widest">
-                                                        {tag}
-                                                        {editingTags && (
-                                                            <button type="button" onClick={() => removeTag(tag)} className="hover:opacity-60 transition-opacity">
-                                                                <X size={10} />
-                                                            </button>
-                                                        )}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                            {editingTags && (
-                                                <div className="flex gap-2 mt-3">
-                                                    <input
-                                                        value={tagInput}
-                                                        onChange={e => setTagInput(e.target.value)}
-                                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput); } }}
-                                                        placeholder="Add tag..."
-                                                        className="flex-1 input-field py-2 text-[10px] font-black uppercase tracking-widest bg-white"
-                                                    />
-                                                    <button type="button" onClick={() => addTag(tagInput)} className="px-4 py-2 bg-brand-secondary text-brand-primary rounded-xl text-[9px] font-black uppercase tracking-widest">Add</button>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Location detected */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Deployment Coordinates</span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${locationCaptured ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                                                    <span className="text-[8px] font-black uppercase tracking-widest text-brand-secondary/40">
-                                                        {locationCaptured ? 'GPS Active' : 'Manual Overide'}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="h-48 w-full relative z-0">
-                                                <LocationPickerMap
-                                                    lat={latitude}
-                                                    lng={longitude}
-                                                    onChange={(newLat, newLng) => {
-                                                        setLatitude(newLat);
-                                                        setLongitude(newLng);
-                                                        setLocationCaptured(false); // Flag as manual once moved
-                                                    }}
-                                                />
-                                            </div>
-
-                                            {aiAnalysis.location_detected.confidence > 0 && (
-                                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
-                                                    <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                                                    <div>
-                                                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Contextual Suggestion</p>
-                                                        <p className="text-[10px] font-bold text-blue-500/80 uppercase tracking-wide">
-                                                            {[aiAnalysis.location_detected.street, aiAnalysis.location_detected.landmark, aiAnalysis.location_detected.city].filter(Boolean).join(' · ')}
-                                                        </p>
+                                        <div className="p-8 space-y-6">
+                                            {/* Risk Score Bar */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-[0.2em]">Risk Score</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-2xl font-black ${riskColors?.text}`}>{aiAnalysis.risk_score}</span>
+                                                        <span className="text-[9px] font-black text-brand-secondary/20">/100</span>
+                                                        <span className={`ml-2 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${riskColors?.badge}`}>
+                                                            {aiAnalysis.severity}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        {/* Accept/Confirm Row */}
-                                        <div className="pt-4 border-t border-brand-secondary/5">
-                                            {!aiConfirmed ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setAiConfirmed(true)}
-                                                    className="w-full py-4 bg-brand-secondary text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-95 transition-all shadow-xl shadow-brand-secondary/20"
-                                                >
-                                                    <CheckCheck size={16} />
-                                                    Accept AI Analysis
-                                                </button>
-                                            ) : (
-                                                <div className="flex items-center gap-3 px-6 py-4 bg-green-50 border border-green-200 rounded-2xl">
-                                                    <CheckCircle2 size={18} className="text-green-500" />
-                                                    <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Analysis Accepted — Ready to Submit</span>
+                                                <div className="w-full h-2 bg-brand-secondary/5 rounded-full overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${aiAnalysis.risk_score}%` }}
+                                                        transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                                                        className={`h-full rounded-full ${riskColors?.bg}`}
+                                                    />
                                                 </div>
-                                            )}
+                                            </div>
+
+                                            {/* Meta badges */}
+                                            <div className="flex flex-wrap gap-3">
+                                                <div className="flex items-center gap-2 px-3 py-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/5">
+                                                    <Clock size={12} className="text-brand-secondary/40" />
+                                                    <span className="text-[9px] font-black text-brand-secondary/60 uppercase tracking-widest">{aiAnalysis.urgency}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 px-3 py-2 bg-brand-secondary/5 rounded-xl border border-brand-secondary/5">
+                                                    <AlertTriangle size={12} className="text-brand-secondary/40" />
+                                                    <span className="text-[9px] font-black text-brand-secondary/60 uppercase tracking-widest">Impact: {aiAnalysis.impact}</span>
+                                                </div>
+                                                {aiAnalysis.risk_score >= 80 && (
+                                                    <div className="flex items-center gap-2 px-3 py-2 bg-red-500 rounded-xl">
+                                                        <Zap size={12} className="text-white" />
+                                                        <span className="text-[9px] font-black text-white uppercase tracking-widest">Auto-Escalate</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Editable Category */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Detected Issue</span>
+                                                    <button type="button" onClick={() => setEditingCategory(!editingCategory)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
+                                                        <Edit3 size={10} /> Edit
+                                                    </button>
+                                                </div>
+                                                {editingCategory ? (
+                                                    <select value={category} onChange={e => { setCategory(e.target.value); setEditingCategory(false); }}
+                                                        className="w-full input-field py-3 bg-white text-[11px] font-black uppercase tracking-widest">
+                                                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <div className="flex items-center gap-3 px-4 py-3 bg-brand-secondary/5 rounded-2xl border border-brand-secondary/5">
+                                                        <MapPin size={16} className="text-brand-secondary/20" />
+                                                        <span className="text-sm font-black text-brand-secondary uppercase tracking-tight">{category || 'Other'}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Editable Description */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">AI Description</span>
+                                                    <button type="button" onClick={() => setEditingDescription(!editingDescription)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
+                                                        <Edit3 size={10} /> Edit
+                                                    </button>
+                                                </div>
+                                                {editingDescription ? (
+                                                    <textarea value={description} onChange={e => setDescription(e.target.value)}
+                                                        onBlur={() => setEditingDescription(false)}
+                                                        rows={3} autoFocus
+                                                        className="w-full input-field py-3 bg-white text-[11px] font-bold resize-none" />
+                                                ) : (
+                                                    <p className="text-sm text-brand-secondary/60 leading-relaxed font-medium px-4 py-3 bg-brand-secondary/5 rounded-2xl border border-brand-secondary/5">
+                                                        {description || 'No description generated.'}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Editable Tags */}
+                                            <div>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Auto Tags</span>
+                                                    <button type="button" onClick={() => setEditingTags(!editingTags)} className="text-[9px] font-black text-brand-secondary/40 uppercase tracking-widest hover:text-brand-secondary flex items-center gap-1 transition-colors">
+                                                        <Tag size={10} /> {editingTags ? 'Done' : 'Edit'}
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {tags.map(tag => (
+                                                        <span key={tag} className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-secondary text-brand-primary rounded-full text-[9px] font-black uppercase tracking-widest">
+                                                            {tag}
+                                                            {editingTags && (
+                                                                <button type="button" onClick={() => removeTag(tag)} className="hover:opacity-60 transition-opacity">
+                                                                    <X size={10} />
+                                                                </button>
+                                                            )}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                                {editingTags && (
+                                                    <div className="flex gap-2 mt-3">
+                                                        <input
+                                                            value={tagInput}
+                                                            onChange={e => setTagInput(e.target.value)}
+                                                            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput); } }}
+                                                            placeholder="Add tag..."
+                                                            className="flex-1 input-field py-2 text-[10px] font-black uppercase tracking-widest bg-white"
+                                                        />
+                                                        <button type="button" onClick={() => addTag(tagInput)} className="px-4 py-2 bg-brand-secondary text-brand-primary rounded-xl text-[9px] font-black uppercase tracking-widest">Add</button>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Location detected */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[9px] font-black text-brand-secondary/30 uppercase tracking-[0.2em]">Deployment Coordinates</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${locationCaptured ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-brand-secondary/40">
+                                                            {locationCaptured ? 'GPS Active' : 'Manual Overide'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="h-48 w-full relative z-0">
+                                                    <LocationPickerMap
+                                                        lat={latitude}
+                                                        lng={longitude}
+                                                        onChange={(newLat, newLng) => {
+                                                            setLatitude(newLat);
+                                                            setLongitude(newLng);
+                                                            setLocationCaptured(false); // Flag as manual once moved
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {aiAnalysis.location_detected.confidence > 0 && (
+                                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
+                                                        <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">AI Contextual Suggestion</p>
+                                                            <p className="text-[10px] font-bold text-blue-500/80 uppercase tracking-wide">
+                                                                {[aiAnalysis.location_detected.street, aiAnalysis.location_detected.landmark, aiAnalysis.location_detected.city].filter(Boolean).join(' · ')}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Accept/Confirm Row */}
+                                            <div className="pt-4 border-t border-brand-secondary/5">
+                                                {!aiConfirmed ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setAiConfirmed(true)}
+                                                        className="w-full py-4 bg-brand-secondary text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 hover:brightness-95 transition-all shadow-xl shadow-brand-secondary/20"
+                                                    >
+                                                        <CheckCheck size={16} />
+                                                        Accept AI Analysis
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex items-center gap-3 px-6 py-4 bg-green-50 border border-green-200 rounded-2xl">
+                                                        <CheckCircle2 size={18} className="text-green-500" />
+                                                        <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Analysis Accepted — Ready to Submit</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-
-                        {/* Manual fallback fields (show only if AI failed or no analysis yet) */}
-                        {(!aiAnalysis || aiAnalysis.ai_failed) && (
-                            <div className="space-y-4">
-                                <input
-                                    type="text"
-                                    value={category}
-                                    onChange={e => setCategory(e.target.value)}
-                                    placeholder="ISSUE DESIGNATOR (E.G. POTHOLE)"
-                                    className="input-field py-4 bg-transparent border-brand-secondary/10 text-[10px] font-black uppercase tracking-widest"
-                                />
-                                <textarea
-                                    value={description}
-                                    onChange={e => setDescription(e.target.value)}
-                                    placeholder="CONTEXTUAL DATA POINTS..."
-                                    className="input-field py-4 bg-transparent border-brand-secondary/10 min-h-[120px] resize-none text-[10px] font-black uppercase tracking-widest"
-                                />
-                                {!aiAnalysis && (
-                                    <button type="button" onClick={() => setAiConfirmed(true)}
-                                        className="w-full py-3 border border-brand-secondary/20 text-brand-secondary rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-secondary/5 transition-all">
-                                        Submit Without AI Analysis
-                                    </button>
+                                    </motion.div>
                                 )}
-                            </div>
-                        )}
+                            </AnimatePresence>
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={!canSubmit || loading}
-                            className={`w-full btn-primary py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-brand-secondary/20 flex items-center justify-center gap-4 group transition-all
-                                ${!canSubmit ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        >
-                            {loading ? (
-                                <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
-                            ) : (
-                                <>
-                                    <Zap size={18} />
-                                    {!image ? 'Upload Image First' : !aiAnalysis ? 'Analyzing...' : !aiConfirmed ? 'Confirm AI Analysis First' : 'Transmit Data Packet'}
-                                </>
+                            {/* Manual fallback fields (show only if AI failed or no analysis yet) */}
+                            {(!aiAnalysis || aiAnalysis.ai_failed) && (
+                                <div className="space-y-4">
+                                    <input
+                                        type="text"
+                                        value={category}
+                                        onChange={e => setCategory(e.target.value)}
+                                        placeholder="ISSUE DESIGNATOR (E.G. POTHOLE)"
+                                        className="input-field py-4 bg-transparent border-brand-secondary/10 text-[10px] font-black uppercase tracking-widest"
+                                    />
+                                    <textarea
+                                        value={description}
+                                        onChange={e => setDescription(e.target.value)}
+                                        placeholder="CONTEXTUAL DATA POINTS..."
+                                        className="input-field py-4 bg-transparent border-brand-secondary/10 min-h-[120px] resize-none text-[10px] font-black uppercase tracking-widest"
+                                    />
+                                    {!aiAnalysis && (
+                                        <button type="button" onClick={() => setAiConfirmed(true)}
+                                            className="w-full py-3 border border-brand-secondary/20 text-brand-secondary rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-secondary/5 transition-all">
+                                            Submit Without AI Analysis
+                                        </button>
+                                    )}
+                                </div>
                             )}
-                        </button>
-                    </form>
-                </div>
-            </main>
-        </div>
+
+                            {/* Submit Button */}
+                            <button
+                                type="submit"
+                                disabled={!canSubmit || loading}
+                                className={`w-full btn-primary py-6 text-[10px] font-black uppercase tracking-[0.4em] shadow-2xl shadow-brand-secondary/20 flex items-center justify-center gap-4 group transition-all
+                                ${!canSubmit ? 'opacity-40 cursor-not-allowed' : ''}`}
+                            >
+                                {loading ? (
+                                    <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <Zap size={18} />
+                                        {!image ? 'Upload Image First' : !aiAnalysis ? 'Analyzing...' : !aiConfirmed ? 'Confirm AI Analysis First' : 'Transmit Data Packet'}
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </main>
+            </div>
+        </MinimalLayout>
     );
 };

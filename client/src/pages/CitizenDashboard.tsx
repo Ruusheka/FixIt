@@ -7,10 +7,10 @@ import {
     Globe,
     Shield,
     ArrowRight,
-    LayoutDashboard as PlanetIcon,
-    Bell as BellIcon,
-    Target as TargetIcon,
-    Award as AwardIcon
+    LayoutDashboard,
+    Bell,
+    Target,
+    Award
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
 
@@ -24,12 +24,12 @@ import { HowItWorks } from '../components/citizen/HowItWorks';
 import { DashboardFooter } from '../components/citizen/DashboardFooter';
 
 const navItems = [
-    { label: 'Dashboard', path: '/citizen', icon: PlanetIcon },
+    { label: 'Dashboard', path: '/citizen', icon: LayoutDashboard },
     { label: 'Reports Hub', path: '/reports', icon: Globe },
     { label: 'My Report', path: '/citizen/reports', icon: FileText },
-    { label: 'Announcement', path: '/citizen/announcements', icon: BellIcon },
-    { label: 'Micro Task', path: '/citizen/micro-tasks', icon: TargetIcon },
-    { label: 'Rewards', path: '/citizen/profile#rewards', icon: AwardIcon },
+    { label: 'Announcement', path: '/citizen/announcements', icon: Bell },
+    { label: 'Micro Task', path: '/citizen/micro-tasks', icon: Target },
+    { label: 'Rewards', path: '/citizen/rewards', icon: Award },
 ];
 
 export const CitizenDashboard: React.FC = () => {
@@ -53,14 +53,14 @@ export const CitizenDashboard: React.FC = () => {
                         <div className="absolute inset-0 bg-gradient-to-r from-brand-primary via-brand-primary/95 to-transparent shadow-inset" />
                     </div>
 
-                    <div className="relative z-10 px-12 lg:px-20 max-w-4xl space-y-8">
+                    <div className="relative z-10 px-6 md:px-12 lg:px-20 max-w-4xl space-y-8 py-12 md:py-0">
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
                             animate={{ opacity: 1, x: 0 }}
                             className="space-y-2"
                         >
                             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-brand-secondary/40">FixIt Systems Architecture</span>
-                            <h1 className="text-5xl lg:text-6xl font-black text-brand-secondary tracking-tighter uppercase leading-[0.9]">
+                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-brand-secondary tracking-tighter uppercase leading-[0.9]">
                                 See it.<br />Report it.<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-secondary to-brand-secondary/40">FixIt.</span>
                             </h1>
                         </motion.div>
@@ -69,7 +69,7 @@ export const CitizenDashboard: React.FC = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.2 }}
-                            className="text-lg text-brand-secondary/60 font-medium max-w-xl leading-relaxed uppercase tracking-tight"
+                            className="text-base md:text-lg text-brand-secondary/60 font-medium max-w-xl leading-relaxed uppercase tracking-tight"
                         >
                             A smart civic reporting platform that allows citizens to report public issues, track progress, and help improve the city with AI-assisted prioritization.
                         </motion.p>
@@ -104,7 +104,7 @@ export const CitizenDashboard: React.FC = () => {
 
                 {/* 2. ABOUT PLATFORM SECTION */}
                 <section className="px-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                    <div className="max-w-7xl mx-auto py-20 md:py-32 px-4 md:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                         <div className="space-y-8">
                             <div className="inline-flex items-center gap-3 px-4 py-2 bg-brand-secondary/5 rounded-full">
                                 <Shield size={16} className="text-brand-secondary" />

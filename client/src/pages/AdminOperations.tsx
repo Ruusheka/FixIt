@@ -6,9 +6,10 @@ import {
     LayoutDashboard, ClipboardCheck, Radio,
     Shield, Briefcase, AlertTriangle, CheckCircle2,
     Clock, TrendingUp, ChevronRight, UserPlus, ShieldCheck,
-    MapPin, BarChart3
+    MapPin, BarChart3, Target
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
+import { adminNavItems } from '../constants/adminNav';
 import { useOperations } from '../hooks/useOperations';
 import { supabase } from '../services/supabase';
 import { WorkerOnboardModal } from '../components/admin/WorkerOnboardModal';
@@ -16,14 +17,7 @@ import { WorkerDetailModal } from '../components/admin/WorkerDetailModal';
 import { ReassignModal } from '../components/admin/ReassignModal';
 import { Profile, Worker, Escalation } from '../types/reports';
 
-const navItems = [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { label: 'Reports Hub', path: '/admin/reports', icon: ClipboardCheck },
-    { label: 'Operations', path: '/admin/operations', icon: Shield },
-    { label: 'Workers', path: '/admin/workers', icon: Users },
-    { label: 'Broadcast', path: '/admin/broadcast', icon: Radio },
-    { label: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-];
+const navItems = adminNavItems;
 
 export const AdminOperations: React.FC = () => {
     const { workers, departments, escalations, slaRules, announcements, activityLogs, loading, updateSLA, logActivity, logReportActivity, fetchData, postAnnouncement, getReportLogs, metrics } = useOperations();
@@ -138,7 +132,7 @@ export const AdminOperations: React.FC = () => {
 
     return (
         <MinimalLayout navItems={navItems} title="Operations Command">
-            <div className="max-w-7xl mx-auto px-8 py-10">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-10">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
                     <motion.div
