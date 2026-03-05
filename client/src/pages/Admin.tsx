@@ -658,12 +658,12 @@ const TrendChart: React.FC<{ data: any[] }> = ({ data }) => (
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
                 <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#000" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#000" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#540023" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#540023" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#BFFF04" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#BFFF04" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#540023" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#540023" stopOpacity={0.1} />
                 </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#00000008" />
@@ -696,22 +696,22 @@ const TrendChart: React.FC<{ data: any[] }> = ({ data }) => (
             <Area
                 type="monotone"
                 dataKey="created"
-                stroke="#000"
+                stroke="#540023"
                 strokeWidth={4}
                 fillOpacity={1}
                 fill="url(#colorCreated)"
                 animationDuration={1500}
-                activeDot={{ r: 6, strokeWidth: 0, fill: '#000' }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: '#540023' }}
             />
             <Area
                 type="monotone"
                 dataKey="resolved"
-                stroke="#BFFF04"
+                stroke="#CCCFBA"
                 strokeWidth={4}
-                fillOpacity={1}
+                fillOpacity={0.8}
                 fill="url(#colorResolved)"
                 animationDuration={2000}
-                activeDot={{ r: 6, strokeWidth: 0, fill: '#BFFF04' }}
+                activeDot={{ r: 8, strokeWidth: 2, stroke: '#540023', fill: '#fff' }}
             />
         </AreaChart>
     </ResponsiveContainer>
@@ -767,10 +767,11 @@ const AdminMap: React.FC<{ issues: any[] }> = ({ issues }) => {
                 center={kelambakkamCoords}
                 radius={40}
                 pathOptions={{
-                    fillColor: '#BFFF04',
-                    color: '#BFFF04',
-                    fillOpacity: 0.1,
-                    dashArray: '5, 10'
+                    fillColor: '#ef4444',
+                    color: '#ef4444',
+                    fillOpacity: 0.15,
+                    dashArray: '5, 10',
+                    weight: 2
                 }}
             />
 
