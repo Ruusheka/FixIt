@@ -77,263 +77,92 @@ const AnimatedRoutes = () => {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {/* Public */}
-        <Route
-          path="/login"
-          element={
-            !user ? (
-              <GlobalAnimationWrapper>
-                <Login />
-              </GlobalAnimationWrapper>
-            ) : <Navigate to={getDashboardPath()} replace />
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            !user ? (
-              <GlobalAnimationWrapper>
-                <Signup />
-              </GlobalAnimationWrapper>
-            ) : <Navigate to={getDashboardPath()} replace />
-          }
-        />
+    <Routes>
+      {/* Public */}
+      <Route
+        path="/login"
+        element={
+          !user ? (
+            <Login />
+          ) : <Navigate to={getDashboardPath()} replace />
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          !user ? (
+            <Signup />
+          ) : <Navigate to={getDashboardPath()} replace />
+        }
+      />
 
-        {/* Citizen */}
-        <Route
-          path="/citizen"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <CitizenDashboard />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/announcements"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <AnnouncementsPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/profile"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <ProfilePage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/report"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <ReportIssue />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/reports"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <MyReportsPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/micro-tasks"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <CitizenMicroTaskPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/micro-tasks/:id"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <CitizenMicroTaskDetailPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/reports/:id"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <ReportIntelligencePage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/citizen/rewards"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <RewardsPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
+      {/* Citizen */}
+      <Route
+        path="/citizen"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><CitizenDashboard /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/announcements"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><AnnouncementsPage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/profile"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><ProfilePage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/report"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><ReportIssue /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/reports"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><MyReportsPage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/micro-tasks"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><CitizenMicroTaskPage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/micro-tasks/:id"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><CitizenMicroTaskDetailPage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/reports/:id"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><ReportIntelligencePage /></RoleProtectedRoute>}
+      />
+      <Route
+        path="/citizen/rewards"
+        element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><RewardsPage /></RoleProtectedRoute>}
+      />
 
-        {/* Reports Hub */}
-        <Route
-          path="/reports"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <ReportsPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports/:id"
-          element={
-            <RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}>
-              <GlobalAnimationWrapper>
-                <ReportDetailPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
+      {/* Hub */}
+      <Route path="/reports" element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><ReportsPage /></RoleProtectedRoute>} />
+      <Route path="/reports/:id" element={<RoleProtectedRoute allowedRoles={['citizen', 'worker', 'admin']}><ReportDetailPage /></RoleProtectedRoute>} />
 
-        {/* Worker */}
-        {/* Worker Portal */}
-        <Route path="/worker/dashboard" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerDashboard /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/today" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><TodayWork /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/calendar" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerCalendar /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/completed" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerCompleted /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/performance" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerPerformance /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/messages" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerMessages /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/profile" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkerProfile /></GlobalAnimationWrapper></RoleProtectedRoute>} />
-        <Route path="/worker/works/:id" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><GlobalAnimationWrapper><WorkDetail /></GlobalAnimationWrapper></RoleProtectedRoute>} />
+      {/* Worker */}
+      <Route path="/worker/dashboard" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerDashboard /></RoleProtectedRoute>} />
+      <Route path="/worker/today" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><TodayWork /></RoleProtectedRoute>} />
+      <Route path="/worker/calendar" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerCalendar /></RoleProtectedRoute>} />
+      <Route path="/worker/completed" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerCompleted /></RoleProtectedRoute>} />
+      <Route path="/worker/performance" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerPerformance /></RoleProtectedRoute>} />
+      <Route path="/worker/messages" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerMessages /></RoleProtectedRoute>} />
+      <Route path="/worker/profile" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkerProfile /></RoleProtectedRoute>} />
+      <Route path="/worker/works/:id" element={<RoleProtectedRoute allowedRoles={['worker', 'admin']}><WorkDetail /></RoleProtectedRoute>} />
 
-        {/* Admin */}
-        <Route
-          path="/admin/*"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminDashboard />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/reports"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminReportsHub />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/reports/:id"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminReportDetail />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
+      {/* Admin */}
+      <Route path="/admin/*" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminDashboard /></RoleProtectedRoute>} />
+      <Route path="/admin/reports" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminReportsHub /></RoleProtectedRoute>} />
+      <Route path="/admin/reports/:id" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminReportDetail /></RoleProtectedRoute>} />
+      <Route path="/admin/operations" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminOperations /></RoleProtectedRoute>} />
+      <Route path="/admin/broadcast" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminBroadcast /></RoleProtectedRoute>} />
+      <Route path="/admin/micro-tasks" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminMicroTaskPage /></RoleProtectedRoute>} />
+      <Route path="/admin/micro-tasks/:id" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminMicroTaskDetailPage /></RoleProtectedRoute>} />
+      <Route path="/admin/engagement" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminEngageCommand /></RoleProtectedRoute>} />
+      <Route path="/admin/profile" element={<RoleProtectedRoute allowedRoles={['admin']}><AdminProfilePage /></RoleProtectedRoute>} />
 
-        <Route
-          path="/admin/operations"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminOperations />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/broadcast"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminBroadcast />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/micro-tasks"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminMicroTaskPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/micro-tasks/:id"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminMicroTaskDetailPage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/microtask-debug"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <MicrotaskDiagnostic />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/engagement"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminEngageCommand />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/profile"
-          element={
-            <RoleProtectedRoute allowedRoles={['admin']}>
-              <GlobalAnimationWrapper>
-                <AdminProfilePage />
-              </GlobalAnimationWrapper>
-            </RoleProtectedRoute>
-          }
-        />
-
-        {/* Default */}
-        <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />
-        <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
-      </Routes>
-    </AnimatePresence>
+      {/* Fallback */}
+      <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />
+      <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
+    </Routes>
   );
 };
 

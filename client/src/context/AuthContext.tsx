@@ -64,31 +64,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let isMounted = true;
 
-        const initializeAuth = async () => {
+        const syncAuth = async () => {
+            // Force a true starting state
             setLoading(true);
+
             try {
-                // 1. Check initial session immediately for fast reload hydration
-                const { data: { session } } = await supabase.auth.getSession();
-                console.log('[Auth] Initializing Session:', session?.user?.email || 'None');
+                // 1. Get current session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+                if (sessionError) throw sessionError;
 
                 if (session?.user && isMounted) {
                     setUser(session.user);
                     const profileData = await fetchProfile(session.user.id);
                     if (isMounted) setProfile(profileData);
+                } else if (isMounted) {
+                    setUser(null);
+                    setProfile(null);
                 }
             } catch (err) {
-                console.error('[Auth] Initialization error:', err);
+                console.error('[Auth Init] Failure:', err);
+                if (isMounted) {
+                    setUser(null);
+                    setProfile(null);
+                }
             } finally {
-                if (isMounted) setLoading(false);
+                // 2. Short delay to ensure React state has propogated 
+                // and to avoid flash of login on slow connections
+                setTimeout(() => {
+                    if (isMounted) setLoading(false);
+                }, 400);
             }
         };
 
-        initializeAuth();
+        syncAuth();
 
-        // 2. Listen for subsequent auth state changes (login, logout, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log(`[Auth] Event: ${event}`, session ? `User: ${session.user.email}` : 'No Session');
-
+            console.log(`[Auth Event] ${event}`);
             if (!isMounted) return;
 
             if (session?.user) {
@@ -99,8 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(null);
                 setProfile(null);
             }
-            // Ensure any manual event also finishes the loading lock
-            setLoading(false);
+
+            // If the state change happened after init, make sure we aren't loading
+            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+                setLoading(false);
+            }
         });
 
         return () => {
