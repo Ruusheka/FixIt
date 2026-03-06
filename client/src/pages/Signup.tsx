@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User, AlertCircle, CheckCircle2, Phone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import loginImage from '../assets/image.png';
 
 export const Signup: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -55,7 +56,7 @@ export const Signup: React.FC = () => {
             <div className="hidden lg:flex lg:w-1/2 relative bg-brand-primary flex-col items-center justify-center p-12 overflow-hidden border-r border-brand-secondary/5">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="/src/assets/image.png"
+                        src={loginImage}
                         alt="Civic Background"
                         className="w-full h-full object-cover opacity-40 mix-blend-multiply grayscale"
                     />

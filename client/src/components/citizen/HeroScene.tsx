@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Camera, MapPin } from 'lucide-react';
+import heroImage from '../../assets/image.png';
 
 export const HeroScene: React.FC = () => {
     const navigate = useNavigate();
@@ -11,7 +12,7 @@ export const HeroScene: React.FC = () => {
             {/* Static Background Image */}
             <div className="absolute inset-0 z-0">
                 <img
-                    src="/src/assets/image.png"
+                    src={heroImage}
                     alt="Civic Infrastructure"
                     className="w-full h-full object-cover opacity-30 grayscale mix-blend-multiply"
                 />

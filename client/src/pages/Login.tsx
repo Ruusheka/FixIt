@@ -5,6 +5,7 @@ import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabase';
 import { RoleSelector } from '../components/RoleSelector';
+import loginImage from '../assets/image.png';
 
 export const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -81,7 +82,7 @@ export const Login: React.FC = () => {
             <div className="hidden lg:flex lg:w-1/2 relative bg-brand-primary flex-col items-center justify-center p-12 overflow-hidden">
                 <div className="absolute inset-0 z-0">
                     <img
-                        src="/src/assets/image.png"
+                        src={loginImage}
                         alt="Civic Background"
                         className="w-full h-full object-cover opacity-40 mix-blend-multiply grayscale"
                     />
