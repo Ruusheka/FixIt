@@ -86,7 +86,7 @@ export const AnnouncementsPage: React.FC = () => {
         setLoading(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
+            const baseUrl = import.meta.env.VITE_API_URL || 'https://fixit-server.onrender.com'; // Fallback to your likely production URL
 
             const response = await fetch(`${baseUrl}/api/broadcasts`, {
                 headers: {

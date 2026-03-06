@@ -1,22 +1,8 @@
 {
-  "name": "zapflux-monorepo",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "postinstall": "cd client && npm install && cd ../server && npm install",
-    "build:client": "npm run build --prefix client",
-    "build:server": "npm run build --prefix server",
-    "build": "npm run build:client && npm run build:server",
-    "start": "node server/dist/server.js",
-    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\""
-  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "multer": "^2.0.2"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
   }
 }
