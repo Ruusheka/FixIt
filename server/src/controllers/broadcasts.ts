@@ -69,16 +69,28 @@ export const createBroadcast = async (req: Request, res: Response) => {
 
 export const getBroadcasts = async (req: Request, res: Response) => {
     try {
+        console.log('📡 [Command] Fetching tactical broadcasts grid...');
         const { data, error } = await supabase
             .from('broadcasts')
-            .select('*, author:profiles!created_by(*), reads:broadcast_reads(count)')
+            .select(`
+                *,
+                author:profiles(*)
+            `)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('❌ [Broadcast Error] Database fetch failed:', error.message, error.details, error.hint);
+            return res.status(500).json({
+                error: 'Database communication failure. Access denied or missing relationship.',
+                details: error.message
+            });
+        }
 
+        console.log(`✅ [Broadcast] Grid updated: ${data?.length || 0} signals intercepted`);
         res.json(data);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        console.error('❌ [Broadcast Critical] Unexpected interruption:', error);
+        res.status(500).json({ error: 'Tactical signal compromised.', details: error.message });
     }
 };
 

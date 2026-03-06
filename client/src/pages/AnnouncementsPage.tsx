@@ -28,11 +28,16 @@ export const AnnouncementsPage: React.FC = () => {
     const processBroadcasts = (data: Broadcast[]) => {
         const now = new Date();
         // Filter by role
-        const roleFiltered = data.filter(b =>
-            b.audience === 'Both' ||
-            b.audience.toLowerCase() === 'citizen' ||
-            (profile && b.audience.toLowerCase() === profile.role.toLowerCase())
-        );
+        // Filter by role with safety checks
+        const roleFiltered = data.filter(b => {
+            if (!b.audience) return true; // Default to visible if audience is unknown
+            const audienceLower = b.audience.toLowerCase();
+            const userRoleLower = profile?.role?.toLowerCase();
+
+            return audienceLower === 'both' ||
+                audienceLower === 'citizen' ||
+                (userRoleLower && audienceLower === userRoleLower);
+        });
 
         const activeList: Broadcast[] = [];
         const expiredList: Broadcast[] = [];
@@ -92,22 +97,28 @@ export const AnnouncementsPage: React.FC = () => {
             if (!response.ok) throw new Error('Failed to fetch from backend grid');
             const data = await response.json();
 
-            if (data) {
+            if (data && Array.isArray(data)) {
                 processBroadcasts(data as Broadcast[]);
             }
         } catch (error) {
-            console.error('[Announcements] Network Error:', error);
-            // Fallback to supabase if backend fails (redundancy)
-            const { data, error: sbError } = await supabase
-                .from('broadcasts')
-                .select('*, author:profiles!created_by(*)')
-                .order('created_at', { ascending: false });
+            console.error('[Announcements] Operational Signal Interrupted:', error);
+            // Fallback to supabase for maximum resilience on reload
+            try {
+                const { data, error: sbError } = await supabase
+                    .from('broadcasts')
+                    .select('*, author:profiles!created_by(*)')
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false });
 
-            if (!sbError && data) {
-                processBroadcasts(data as Broadcast[]);
+                if (!sbError && data) {
+                    processBroadcasts(data as Broadcast[]);
+                }
+            } catch (fallbackError) {
+                console.error('[Announcements] Critical Fallback Failure:', fallbackError);
             }
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     useEffect(() => {
