@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -28,77 +28,117 @@ export interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [profileLoading, setProfileLoading] = useState(false);
+    // 1. Consolidated State for Atomic Updates (Prevents Flickering)
+    const [state, setState] = useState<{
+        user: User | null;
+        profile: Profile | null;
+        isLoading: boolean;
+        isInitialAuthDone: boolean;
+        isProfileSyncing: boolean;
+    }>({
+        user: null,
+        profile: null,
+        isLoading: true,
+        isInitialAuthDone: false,
+        isProfileSyncing: false
+    });
 
-    const fetchProfile = async (userId: string) => {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
+    const fetchProfile = async (userId: string): Promise<Profile | null> => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
 
-        if (error) {
-            console.error('Error fetching profile:', error);
+            if (error) {
+                console.error('[Auth Service] Critical Profile Read Failure:', error);
+                return null;
+            }
+            return data as Profile;
+        } catch (e) {
+            console.error('[Auth Service] Unexpected Fetch Error:', e);
             return null;
         }
-        return data as Profile;
     };
 
     const refreshProfile = async () => {
-        if (!user) return;
-        const profileData = await fetchProfile(user.id);
-        setProfile(profileData);
+        if (!state.user) return;
+        setState(prev => ({ ...prev, isProfileSyncing: true }));
+        const profileData = await fetchProfile(state.user.id);
+        setState(prev => ({
+            ...prev,
+            profile: profileData,
+            isProfileSyncing: false
+        }));
     };
 
-    // 1. Initial hydration on mount
+    // 2. Synchronized Initialization Routine
     useEffect(() => {
         let isMounted = true;
-        const syncAuth = async () => {
-            setLoading(true);
+
+        const initializeAuthSystem = async () => {
+            // STEP 1: Recover Session
             try {
                 const { data: { session } } = await supabase.auth.getSession();
+
                 if (session?.user && isMounted) {
-                    setUser(session.user);
-                    setProfileLoading(true);
+                    // STEP 2: Pre-fetch profile before revealing the app
                     const profileData = await fetchProfile(session.user.id);
-                    if (isMounted) setProfile(profileData);
-                    setProfileLoading(false);
+                    if (isMounted) {
+                        setState({
+                            user: session.user,
+                            profile: profileData,
+                            isLoading: false,
+                            isInitialAuthDone: true,
+                            isProfileSyncing: false
+                        });
+                    }
+                } else if (isMounted) {
+                    setState({
+                        user: null,
+                        profile: null,
+                        isLoading: false,
+                        isInitialAuthDone: true,
+                        isProfileSyncing: false
+                    });
                 }
             } catch (err) {
-                console.error('[Auth Init] Recovery Failed:', err);
-            } finally {
+                console.error('[Auth System] Critical boot failure:', err);
                 if (isMounted) {
-                    setIsInitialized(true);
-                    setLoading(false);
+                    setState(prev => ({ ...prev, isLoading: false, isInitialAuthDone: true }));
                 }
             }
         };
-        syncAuth();
-    }, []);
 
-    // 2. Global state change monitoring
-    useEffect(() => {
-        let isMounted = true;
+        initializeAuthSystem();
+
+        // 3. Subscription Management for Login/Logout/Refresh
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log(`[Auth Event] ${event}`);
+            console.log(`[🔐 Security Event] ${event}`);
             if (!isMounted) return;
 
             if (event === 'SIGNED_OUT') {
-                setUser(null);
-                setProfile(null);
-                setLoading(false);
-                setProfileLoading(false);
+                setState({
+                    user: null,
+                    profile: null,
+                    isLoading: false,
+                    isInitialAuthDone: true,
+                    isProfileSyncing: false
+                });
             } else if (session?.user) {
-                setUser(session.user);
-                setProfileLoading(true);
+                // If it's a new or refreshed login, ensure profile is synced before final render
+                setState(prev => ({ ...prev, isProfileSyncing: true, user: session.user }));
                 const profileData = await fetchProfile(session.user.id);
-                if (isMounted) setProfile(profileData);
-                setProfileLoading(false);
-                setLoading(false);
+                if (isMounted) {
+                    setState({
+                        user: session.user,
+                        profile: profileData,
+                        isLoading: false,
+                        isInitialAuthDone: true,
+                        isProfileSyncing: false
+                    });
+                }
             }
         });
 
@@ -133,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const updateProfile = async (data: { full_name?: string; avatar_url?: string; phone?: string; ward?: string }) => {
-        if (!user) return;
+        if (!state.user) return;
         const updateData: any = {};
         if (data.full_name !== undefined) updateData.full_name = data.full_name;
         if (data.avatar_url !== undefined) updateData.avatar_url = data.avatar_url;
@@ -142,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const { error } = await (supabase.from('profiles') as any)
             .update(updateData)
-            .eq('id', user.id);
+            .eq('id', state.user.id);
         if (error) throw error;
         await refreshProfile();
     };
@@ -153,9 +193,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const value = {
-        user,
-        profile,
-        loading: (!isInitialized || loading || profileLoading),
+        user: state.user,
+        profile: state.profile,
+        loading: (!state.isInitialAuthDone || state.isLoading || state.isProfileSyncing),
         signUp,
         signIn,
         signOut,
