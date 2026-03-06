@@ -45,16 +45,25 @@ export const AnnouncementPanel: React.FC<AnnouncementPanelProps> = ({ role }) =>
     const fetchBroadcasts = async () => {
         try {
             setLoading(true);
-            console.log(`[Diagnostic] Fetching broadcasts for role: ${role}`);
+            const { data: { session } } = await supabase.auth.getSession();
+            const baseUrl = import.meta.env.VITE_API_URL || 'https://fixit-server.onrender.com';
 
-            const { data, error } = await supabase
-                .from('broadcasts')
-                .select('*')
-                .eq('is_active', true);
+            const response = await fetch(`${baseUrl}/api/broadcasts`, {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            });
 
-            if (error) {
-                console.error('[Diagnostic] Supabase Query Error:', error);
-                throw error;
+            let data;
+            if (response.ok) {
+                data = await response.json();
+            } else {
+                // Fallback to supabase if backend fails
+                const { data: sbData, error: sbError } = await supabase
+                    .from('broadcasts')
+                    .select('*')
+                    .eq('is_active', true);
+                if (!sbError) data = sbData;
             }
 
             console.log(`[Diagnostic] Raw data received: ${data?.length || 0} rows`);
