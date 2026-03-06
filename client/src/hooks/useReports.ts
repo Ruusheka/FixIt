@@ -30,13 +30,15 @@ export const useReports = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchReports = async () => {
+    const fetchReports = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const { data, error: fetchError } = await supabase
                 .from('issues')
                 .select(`
-                    *,
+                    id, title, description, address, latitude, longitude, 
+                    risk_score, risk_score_int, user_id, status, severity, 
+                    created_at, resolved_at, image_url,
                     profiles:user_id(full_name, avatar_url),
                     report_assignments(worker_id),
                     report_comments(id)
@@ -45,7 +47,7 @@ export const useReports = () => {
 
             if (fetchError) throw fetchError;
 
-            const formattedReports = data.map((r: any) => ({
+            const formattedReports = (data || []).map((r: any) => ({
                 ...r,
                 status: r.status === 'reported' ? 'open' : r.status,
                 location: r.address || 'Tactical Origin',
@@ -59,17 +61,23 @@ export const useReports = () => {
         } catch (err: any) {
             setError(err.message);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchReports();
+        fetchReports(true);
 
         const channel = supabase
             .channel('reports-realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => {
-                fetchReports();
+                fetchReports(false); // Background refresh
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_assignments' }, () => {
+                fetchReports(false); // Update when worker assigned
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_comments' }, () => {
+                fetchReports(false); // Update comment count
             })
             .subscribe();
 

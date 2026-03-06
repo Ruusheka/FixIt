@@ -20,8 +20,7 @@ import {
     UserPlus,
     MapPin,
     ChevronRight,
-    Target,
-    LogOut
+    Target
 } from 'lucide-react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MinimalLayout } from '../components/MinimalLayout';
@@ -86,9 +85,9 @@ export const AdminDashboard: React.FC = () => {
         // Subscription for real-time updates
         const channel = supabase
             .channel('admin_dashboard_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => fetchAllData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => fetchAllData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'escalations' }, () => fetchAllData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => fetchAllData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => fetchAllData(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'escalations' }, () => fetchAllData(true))
             .subscribe();
 
         return () => {
@@ -96,84 +95,67 @@ export const AdminDashboard: React.FC = () => {
         };
     }, [trendFilter]);
 
-    const fetchAllData = async () => {
-        setLoading(true);
+    const fetchAllData = async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
-            // 1. Stats
             const resolvedStatuses = ['resolved', 'closed', 'RESOLVED'];
 
+            // Parallel fetch of different tables
             const [
-                { count: totalCount },
-                { count: resolvedCount },
-                { count: highRiskCount },
-                { count: escalatedCount },
-                { count: activeWorkersCount }
-            ] = await Promise.all([
-                supabase.from('issues').select('*', { count: 'exact', head: true }),
-                supabase.from('issues').select('*', { count: 'exact', head: true }).in('status', resolvedStatuses),
-                supabase.from('issues').select('*', { count: 'exact', head: true }).gt('risk_score', 70),
-                supabase.from('issues').select('*', { count: 'exact', head: true }).eq('is_escalated', true),
-                supabase.from('workers').select('*', { count: 'exact', head: true }).eq('status', 'busy')
-            ]);
+                { data: issues = [] },
+                { data: workers = [] },
+                { data: recentEsc = [] },
+                { data: logs = [] },
+                { data: load = [] }
+            ] = (await Promise.all([
+                supabase.from('issues').select('id, created_at, resolved_at, risk_score, is_escalated, status, title, latitude, longitude, address, priority, image_url'),
+                supabase.from('workers').select('id, full_name, role, status, avatar_url, phone, active_task_count'),
+                supabase.from('escalations').select('id, report_id, reason, status, created_at, report:issues(title, status)').order('created_at', { ascending: false }).limit(5),
+                supabase.from('admin_activity_logs').select('id, admin_id, action, target_type, target_id, created_at, admin:profiles(full_name)').order('created_at', { ascending: false }).limit(5),
+                supabase.from('report_assignments').select('worker_id, worker:profiles!report_assignments_worker_id_fkey(full_name)').eq('is_active', true)
+            ])) as any[];
+
+            // 1. Calculate Stats from the single issues fetch
+            const total = issues?.length || 0;
+            const resolved = issues?.filter((i: any) => resolvedStatuses.includes(i.status)).length || 0;
+            const highRisk = issues?.filter((i: any) => (i.risk_score || 0) > 70).length || 0;
+            const escalated = issues?.filter((i: any) => i.is_escalated).length || 0;
+            const busyWorkers = workers?.filter((w: any) => w.status === 'busy').length || 0;
 
             setStats({
-                total: totalCount || 0,
-                resolved: resolvedCount || 0,
-                active: (totalCount || 0) - (resolvedCount || 0),
-                highRisk: highRiskCount || 0,
-                escalated: escalatedCount || 0,
-                workersActive: activeWorkersCount || 0
+                total,
+                resolved,
+                active: total - resolved,
+                highRisk,
+                escalated,
+                workersActive: busyWorkers
             });
 
             // 2. Recent Issues
-            const { data: recent } = await supabase.from('issues')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(5);
-            setRecentIssues(recent || []);
+            const sortedRecent = [...(issues || [])]
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 5);
+            setRecentIssues(sortedRecent);
 
-            // 3. Removed High Risk Issues fetch
+            // 3. Worker Stats
+            setWorkerStats({
+                available: (workers || []).filter((w: any) => w.status === 'available').length,
+                busy: (workers || []).filter((w: any) => w.status === 'busy').length,
+                onLeave: (workers || []).filter((w: any) => w.status === 'on_leave').length,
+                activeAssignments: busyWorkers
+            });
 
-            // 4. Worker Activity
-            const { data: workers = [] } = await supabase.from('workers').select('*') as { data: any[] | null };
-            if (workers) {
-                setWorkerStats({
-                    available: workers.filter((w: any) => w.status === 'available').length,
-                    busy: workers.filter((w: any) => w.status === 'busy').length,
-                    onLeave: workers.filter((w: any) => w.status === 'on_leave').length,
-                    activeAssignments: stats.workersActive // Approximation
-                });
-            }
+            // 4. Trend Analytics
+            processTrendData(issues || []);
 
-            // 5. Trend Analytics
-            const { data: trendIssues } = await supabase.from('issues').select('created_at, resolved_at');
-            if (trendIssues) {
-                processTrendData(trendIssues);
-            }
+            // 5. Map Data
+            setAllIssues(issues || []);
 
-            // 6. Map Data
-            const { data: allMapIssues } = await supabase.from('issues').select('id, title, latitude, longitude, status, risk_score');
-            setAllIssues(allMapIssues || []);
-
-            // 7. Escalations
-            const { data: recentEsc } = await supabase.from('escalations')
-                .select('*, report:issues(title, status)')
-                .order('created_at', { ascending: false })
-                .limit(5);
+            // 6. Escalations & Logs
             setEscalations(recentEsc || []);
-
-            // 8. Activity Logs
-            const { data: logs } = await supabase.from('admin_activity_logs')
-                .select('*, admin:profiles(full_name)')
-                .order('created_at', { ascending: false })
-                .limit(5);
             setActivityLogs(logs || []);
 
-            // 9. Worker Load
-            const { data: load } = await supabase.from('report_assignments')
-                .select('worker_id, worker:profiles!report_assignments_worker_id_fkey(full_name)')
-                .eq('is_active', true);
-
+            // 7. Worker Load
             if (load) {
                 const loadMap = new Map();
                 load.forEach((item: any) => {
@@ -407,7 +389,7 @@ export const AdminDashboard: React.FC = () => {
                             >
                                 <div className="h-48 bg-brand-secondary/5 overflow-hidden">
                                     <img
-                                        src={issue.image_url || 'https://via.placeholder.com/400x300?text=No+Incident+Image'}
+                                        src={issue.image_url || 'https://placehold.co/400x300?text=No+Incident+Image'}
                                         alt={issue.title}
                                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 scale-105 group-hover:scale-100"
                                     />
@@ -511,27 +493,12 @@ export const AdminDashboard: React.FC = () => {
                                 { label: 'Assign Worker', icon: UserPlus, path: '/admin/reports' },
                                 { label: 'View Reports Hub', icon: ClipboardCheck, path: '/admin/reports' },
                                 { label: 'Deploy Micro-Task', icon: Target, path: '/admin/micro-tasks' },
-                                { label: 'Create Broadcast', icon: Radio, path: '/admin/broadcast' },
-                                { label: 'Sign Out', icon: LogOut, action: 'signout' },
+                                { label: 'Create Broadcast', icon: Radio, path: '/admin/broadcast' }
                             ].map((action, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => {
-                                        if (action.action === 'signout') {
-                                            const confirmSignOut = window.confirm("Are you sure you want to sign out of the Command Center?");
-                                            if (confirmSignOut) {
-                                                supabase.auth.signOut().then(() => {
-                                                    window.location.href = '/login';
-                                                });
-                                            }
-                                        } else if (action.path) {
-                                            navigate(action.path);
-                                        }
-                                    }}
-                                    className={`flex items-center gap-3 px-6 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-card ${action.action === 'signout'
-                                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-600 hover:text-white'
-                                        : 'bg-white border-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary hover:text-white'
-                                        }`}
+                                    onClick={() => navigate(action.path)}
+                                    className="flex items-center gap-3 px-6 py-3 border rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-card bg-white border-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary hover:text-white"
                                 >
                                     <action.icon size={16} />
                                     {action.label}
@@ -613,7 +580,7 @@ const HighRiskCard: React.FC<{ issue: any; onClick: () => void }> = ({ issue, on
     >
         <div className="flex gap-4">
             <div className="w-20 h-20 rounded-2xl overflow-hidden bg-brand-secondary/10 shrink-0">
-                <img src={issue.image_url || 'https://via.placeholder.com/80'} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                <img src={issue.image_url || 'https://placehold.co/80'} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
             </div>
             <div className="flex-1 space-y-2 overflow-hidden">
                 <div className="flex items-center justify-between">

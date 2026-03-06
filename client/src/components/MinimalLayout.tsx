@@ -13,6 +13,7 @@ import {
     UserCircle
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { NotificationBell } from './NotificationBell';
 
 interface NavItem {
     label: string;
@@ -169,6 +170,7 @@ export const MinimalLayout: React.FC<MinimalLayoutProps> = ({ children, navItems
                             <p className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-[0.2em] leading-none mb-1">Authenticated {profile?.role}</p>
                             <p className="text-sm font-black text-brand-secondary uppercase tracking-tighter">Hello, {profile?.full_name?.split(' ')[0] || 'User'}</p>
                         </div>
+                        <NotificationBell />
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

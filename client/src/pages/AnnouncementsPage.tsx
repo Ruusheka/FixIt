@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Megaphone, MapPin, Navigation, Clock, Calendar, Bell, Info, ChevronRight, Map as MapIcon, LayoutDashboard, Globe, FileText, Target, Award } from 'lucide-react';
+import { Megaphone, MapPin, Clock, Calendar, Bell, Map as MapIcon, LayoutDashboard, Globe, FileText, Target, Award, RefreshCcw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { MinimalLayout } from '../components/MinimalLayout';
@@ -19,52 +19,95 @@ const navItems = [
 
 export const AnnouncementsPage: React.FC = () => {
     const { profile } = useAuth();
-    const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+    const [activeBroadcasts, setActiveBroadcasts] = useState<Broadcast[]>([]);
+    const [expiredBroadcasts, setExpiredBroadcasts] = useState<Broadcast[]>([]);
+    const [currentTab, setCurrentTab] = useState<'active' | 'expired'>('active');
     const [loading, setLoading] = useState(true);
     const [openMapId, setOpenMapId] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchBroadcasts = async () => {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('broadcasts')
-                .select('*')
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
+    const processBroadcasts = (data: Broadcast[]) => {
+        const now = new Date();
+        // Filter by role
+        const roleFiltered = data.filter(b =>
+            b.audience === 'Both' ||
+            b.audience.toLowerCase() === 'citizen' ||
+            (profile && b.audience.toLowerCase() === profile.role.toLowerCase())
+        );
 
-            if (error) {
-                console.error('[Announcements] Error fetching:', error);
-            } else if (data) {
-                const now = new Date();
-                // Filter by role if profile exists
-                const roleFiltered = profile ? (data as Broadcast[]).filter(b =>
-                    b.audience === 'Both' ||
-                    b.audience.toLowerCase() === profile.role.toLowerCase()
-                ) : (data as Broadcast[]);
+        const activeList: Broadcast[] = [];
+        const expiredList: Broadcast[] = [];
 
-                // Sort: Nearly coming (future) first, then past (newest first)
-                const sorted = [...roleFiltered].sort((a, b) => {
-                    const dateA = new Date(a.scheduled_at || a.created_at);
-                    const dateB = new Date(b.scheduled_at || b.created_at);
+        roleFiltered.forEach(b => {
+            const start_datetime = b.scheduled_at ? new Date(b.scheduled_at) : new Date(0);
+            const end_datetime = b.expires_at ? new Date(b.expires_at) : new Date(8640000000000000);
 
-                    const isFutureA = dateA >= now;
-                    const isFutureB = dateB >= now;
-
-                    if (isFutureA && isFutureB) {
-                        return dateA.getTime() - dateB.getTime(); // Future: Soonest first
-                    }
-                    if (isFutureA && !isFutureB) return -1; // Future before past
-                    if (!isFutureA && isFutureB) return 1;  // Past after future
-
-                    return dateB.getTime() - dateA.getTime(); // Past: Most recent first
-                });
-
-                setBroadcasts(sorted);
+            if (now > end_datetime) {
+                expiredList.push(b);
+            } else if (now >= start_datetime) {
+                activeList.push(b);
             }
-            setLoading(false);
-        };
+            // Future-dated items are ignored for citizens until start time is reached
+        });
 
+        // Sort: Nearly coming (future) first, then past (newest first)
+        activeList.sort((a, b) => {
+            const startA = new Date(a.scheduled_at || a.created_at);
+            const startB = new Date(b.scheduled_at || b.created_at);
+
+            const isUpcomingA = startA > now;
+            const isUpcomingB = startB > now;
+
+            if (isUpcomingA && isUpcomingB) {
+                return startA.getTime() - startB.getTime(); // Future: Soonest first
+            }
+            if (isUpcomingA && !isUpcomingB) return -1; // Future before past
+            if (!isUpcomingA && isUpcomingB) return 1;  // Past after future
+
+            return startB.getTime() - startA.getTime(); // Past: Most recent first
+        });
+
+        // Sort expired: Most recently expired first
+        expiredList.sort((a, b) => {
+            const endA = a.expires_at ? new Date(a.expires_at).getTime() : 0;
+            const endB = b.expires_at ? new Date(b.expires_at).getTime() : 0;
+            return endB - endA;
+        });
+
+        setActiveBroadcasts(activeList);
+        setExpiredBroadcasts(expiredList);
+    };
+
+    const fetchBroadcasts = async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('broadcasts')
+            .select('*, author:profiles!created_by(*)')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('[Announcements] Error fetching:', error);
+        } else if (data) {
+            processBroadcasts(data as Broadcast[]);
+        }
+        setLoading(false);
+    };
+
+    useEffect(() => {
         fetchBroadcasts();
+
+        const channel = supabase
+            .channel('broadcasts-realtime-citizen')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, (payload) => {
+                console.log('📡 [Citizen Intel] New broadcast signal detected:', payload.new.title);
+                fetchBroadcasts();
+            })
+            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'broadcasts' }, () => { fetchBroadcasts(); })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'broadcasts' }, () => { fetchBroadcasts(); })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [profile]);
 
     const getPriorityColor = (priority: string) => {
@@ -90,21 +133,51 @@ export const AnnouncementsPage: React.FC = () => {
                             </div>
                             <div>
                                 <h1 className="text-4xl font-black text-brand-secondary tracking-tighter uppercase">Operational Alerts</h1>
-                                <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-[0.3em] mt-1">Real-time city-wide intelligence broadcast</p>
+                                <div className="flex items-center gap-4 mt-1">
+                                    <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-[0.3em]">Real-time city-wide intelligence broadcast</p>
+                                    <button
+                                        onClick={() => fetchBroadcasts()}
+                                        className="text-[9px] font-black text-brand-secondary/40 hover:text-brand-secondary uppercase tracking-[0.2em] transition-all flex items-center gap-1.5 border border-brand-secondary/5 px-2 py-0.5 rounded-lg hover:bg-brand-secondary/5"
+                                    >
+                                        <RefreshCcw size={10} className="animate-spin-slow" /> Force Sync
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </header>
+
+                {/* Tabs */}
+                <div className="flex gap-4 mb-8">
+                    <button
+                        onClick={() => setCurrentTab('active')}
+                        className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${currentTab === 'active' ? 'bg-brand-secondary text-brand-primary shadow-xl shadow-brand-secondary/10' : 'bg-transparent text-brand-secondary/40 hover:bg-brand-secondary/5 hover:text-brand-secondary'}`}
+                    >
+                        Active
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] ${currentTab === 'active' ? 'bg-brand-primary text-brand-secondary' : 'bg-brand-secondary/10'}`}>
+                            {activeBroadcasts.length}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setCurrentTab('expired')}
+                        className={`px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${currentTab === 'expired' ? 'bg-brand-secondary text-brand-primary shadow-xl shadow-brand-secondary/10' : 'bg-transparent text-brand-secondary/40 hover:bg-brand-secondary/5 hover:text-brand-secondary'}`}
+                    >
+                        Expired
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] ${currentTab === 'expired' ? 'bg-brand-primary text-brand-secondary' : 'bg-brand-secondary/10'}`}>
+                            {expiredBroadcasts.length}
+                        </span>
+                    </button>
+                </div>
 
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="w-10 h-10 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin" />
                         <p className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-widest">Accessing Intelligence Grid...</p>
                     </div>
-                ) : broadcasts.length > 0 ? (
+                ) : (currentTab === 'active' ? activeBroadcasts : expiredBroadcasts).length > 0 ? (
                     <div className="grid grid-cols-1 gap-8">
                         <AnimatePresence>
-                            {broadcasts.map((b, i) => (
+                            {(currentTab === 'active' ? activeBroadcasts : expiredBroadcasts).map((b, i) => (
                                 <motion.div
                                     key={b.id}
                                     initial={{ opacity: 0, y: 20 }}
@@ -224,7 +297,9 @@ export const AnnouncementsPage: React.FC = () => {
                         <div className="w-20 h-20 bg-brand-secondary/5 rounded-3xl flex items-center justify-center mx-auto mb-8 text-brand-secondary/10">
                             <Bell size={40} />
                         </div>
-                        <h2 className="text-2xl font-black text-brand-secondary uppercase tracking-tighter mb-4">No active intelligence</h2>
+                        <h2 className="text-2xl font-black text-brand-secondary uppercase tracking-tighter mb-4">
+                            {currentTab === 'active' ? 'No active announcements currently.' : 'No past announcements.'}
+                        </h2>
                         <p className="text-sm font-black text-brand-secondary/20 uppercase tracking-[0.2em]">The city grid is currently silent.</p>
                     </div>
                 )}

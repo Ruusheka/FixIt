@@ -69,17 +69,30 @@ export const BroadcastCenter: React.FC = () => {
         }
     };
 
-    const activeBroadcasts = useMemo(() =>
-        broadcasts.filter(b => b.is_active && (!b.scheduled_at || new Date(b.scheduled_at) <= new Date())),
-        [broadcasts]);
+    const activeBroadcasts = useMemo(() => {
+        const now = new Date();
+        return broadcasts.filter(b =>
+            b.is_active !== false &&
+            (!b.scheduled_at || new Date(b.scheduled_at) <= now) &&
+            (!b.expires_at || new Date(b.expires_at) >= now)
+        );
+    }, [broadcasts]);
 
-    const scheduledBroadcasts = useMemo(() =>
-        broadcasts.filter(b => b.is_active && b.scheduled_at && new Date(b.scheduled_at) > new Date()),
-        [broadcasts]);
+    const scheduledBroadcasts = useMemo(() => {
+        const now = new Date();
+        return broadcasts.filter(b =>
+            b.is_active !== false &&
+            b.scheduled_at && new Date(b.scheduled_at) > now
+        );
+    }, [broadcasts]);
 
-    const expiredBroadcasts = useMemo(() =>
-        broadcasts.filter(b => !b.is_active || (b.expires_at && new Date(b.expires_at) < new Date())),
-        [broadcasts]);
+    const expiredBroadcasts = useMemo(() => {
+        const now = new Date();
+        return broadcasts.filter(b =>
+            b.is_active === false ||
+            (b.expires_at && new Date(b.expires_at) < now)
+        );
+    }, [broadcasts]);
 
     const tabs: { id: TabType; label: string; icon: any }[] = [
         { id: 'create', label: 'Create', icon: Send },
@@ -147,7 +160,7 @@ export const BroadcastCenter: React.FC = () => {
                                                 <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Target Audience</label>
                                                 <select
                                                     value={targetRole} onChange={e => setTargetRole(e.target.value as any)}
-                                                    className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none"
+                                                    className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center]"
                                                 >
                                                     <option value="Both">ALL USERS</option>
                                                     <option value="Citizen">CITIZENS ONLY</option>
@@ -158,7 +171,7 @@ export const BroadcastCenter: React.FC = () => {
                                                 <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Priority Level</label>
                                                 <select
                                                     value={priority} onChange={e => setPriority(e.target.value as any)}
-                                                    className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none"
+                                                    className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold appearance-none bg-no-repeat bg-[right_1.25rem_center]"
                                                 >
                                                     <option value="Low">LOW</option>
                                                     <option value="Medium">MEDIUM</option>
@@ -170,16 +183,16 @@ export const BroadcastCenter: React.FC = () => {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Schedule Time (Optional)</label>
+                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Schedule Time</label>
                                                 <input
-                                                    type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
+                                                    type="datetime-local" required value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
                                                     className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Expiry Time (Optional)</label>
+                                                <label className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-1">Expiry Time</label>
                                                 <input
-                                                    type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
+                                                    type="datetime-local" required value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
                                                     className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-xs px-5 py-4 rounded-2xl focus:outline-none font-bold"
                                                 />
                                             </div>
@@ -261,7 +274,7 @@ export const BroadcastCenter: React.FC = () => {
                                                 )}
                                             </AnimatePresence>
                                             <input
-                                                type="text" value={address} onChange={e => setAddress(e.target.value)}
+                                                type="text" required value={address} onChange={e => setAddress(e.target.value)}
                                                 placeholder="Deployment address or landmark..."
                                                 className="w-full bg-brand-secondary/5 border border-brand-secondary/5 text-brand-secondary text-sm px-5 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-brand-secondary/20 placeholder:text-brand-secondary/20 font-bold mt-2"
                                             />

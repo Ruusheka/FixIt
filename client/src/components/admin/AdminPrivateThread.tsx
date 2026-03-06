@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Report, PrivateMessage, Profile } from '../../types/reports';
+import { notifyUserMessage, createNotification } from '../../hooks/useNotifications';
 
 interface AdminPrivateThreadProps {
     report: Report;
@@ -64,6 +65,26 @@ export const AdminPrivateThread: React.FC<AdminPrivateThreadProps> = ({ report, 
                 if (newMessage) {
                     setMessages(prev => [...prev, newMessage]);
                     scrollToBottom();
+
+                    // If the message is from a citizen (not admin), notify all admins
+                    if (payload.new.sender_id !== adminId) {
+                        const { data: admins } = await (supabase.from('profiles') as any)
+                            .select('id').eq('role', 'admin');
+                        const senderName = newMessage.sender?.full_name || 'Citizen';
+                        (admins || []).forEach((admin: { id: string }) => {
+                            if (admin.id !== adminId) {
+                                createNotification({
+                                    user_id: admin.id,
+                                    user_role: 'admin',
+                                    title: '💬 Citizen Replied',
+                                    message: `${senderName} replied on report: "${report.title}"`,
+                                    type: 'message',
+                                    reference_id: report.id,
+                                    redirect_url: `/admin/reports/${report.id}`,
+                                }).catch(console.error);
+                            }
+                        });
+                    }
                 }
             })
             .subscribe();
@@ -92,6 +113,13 @@ export const AdminPrivateThread: React.FC<AdminPrivateThreadProps> = ({ report, 
         if (error) {
             console.error("Error sending message:", error);
             setInputText(text); // Restore on error
+            return;
+        }
+
+        // Notify the citizen that admin sent them a message
+        const citizenId = (report.reporter as any)?.id ?? (report as any).user_id;
+        if (citizenId && citizenId !== adminId) {
+            notifyUserMessage(citizenId, 'citizen', report.id, 'Admin').catch(console.error);
         }
     };
 

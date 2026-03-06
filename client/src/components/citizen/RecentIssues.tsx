@@ -22,18 +22,33 @@ export const RecentIssues: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchRecent = async () => {
+    const fetchRecent = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
             const { data } = await supabase
                 .from('issues')
-                .select('*')
+                .select('id, title, description, category, status, risk_score, image_url, address, created_at')
                 .order('created_at', { ascending: false })
                 .limit(3);
 
             if (data) setIssues(data);
-            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching recent issues:', err);
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRecent(false);
+
+        const channel = supabase.channel('recent_issues_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => fetchRecent(true))
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
         };
-        fetchRecent();
     }, []);
 
     if (loading) return (

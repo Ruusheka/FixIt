@@ -9,6 +9,7 @@ import { ProofUploadModal } from '../../components/worker/ProofUploadModal';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { createNotification } from '../../hooks/useNotifications';
 
 // Fix Leaflet marker icon issue
 // @ts-ignore
@@ -147,13 +148,30 @@ export const WorkDetail: React.FC = () => {
         const tempMsg = newMessage;
         setNewMessage('');
 
-        await supabase.from('report_messages').insert({
+        const { error } = await supabase.from('report_messages').insert({
             report_id: id,
             sender_id: profile.id,
             sender_role: 'worker',
             channel: 'worker',
             message_text: tempMsg
         } as any);
+
+        if (!error) {
+            // Notify all admins that the worker replied
+            const { data: admins } = await (supabase.from('profiles') as any)
+                .select('id').eq('role', 'admin');
+            (admins || []).forEach((admin: { id: string }) => {
+                createNotification({
+                    user_id: admin.id,
+                    user_role: 'admin',
+                    title: '💬 Worker Replied',
+                    message: `${profile.full_name || 'A worker'} sent a message on: "${task?.title || 'a report'}"`,
+                    type: 'message',
+                    reference_id: id,
+                    redirect_url: `/admin/reports/${id}`,
+                }).catch(console.error);
+            });
+        }
     };
 
     if (loading) {

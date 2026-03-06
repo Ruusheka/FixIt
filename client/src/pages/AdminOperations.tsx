@@ -571,7 +571,7 @@ const AnnouncementsSection: React.FC<{ data: any; onPost: (t: string, c: string,
                         />
                     </div>
                     <button className="w-full py-4 bg-white text-brand-secondary rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-primary transition-all">
-                        Execute Broadcast
+                        Post Announcement
                     </button>
                 </form>
             </div>

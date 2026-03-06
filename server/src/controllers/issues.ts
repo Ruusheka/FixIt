@@ -8,15 +8,18 @@ export const reportIssue = async (req: Request, res: Response) => {
         const { title, description, category, latitude, longitude, address,
             // AI pre-verified fields (sent from frontend after user confirmation)
             ai_category, ai_tags, ai_description, ai_risk_score,
-            ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated
+            ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated,
+            image_url: existing_image_url
         } = req.body;
         const userId = (req as any).user?.id || null;
         console.log('--- Issue Submission ---');
         console.log('Authenticated User ID:', userId);
 
         const imageFile = req.file;
-        if (!imageFile) {
-            return res.status(400).json({ error: 'Image is required' });
+        let imageUrl = existing_image_url;
+
+        if (!imageFile && !imageUrl) {
+            return res.status(400).json({ error: 'Image is required (either file or url)' });
         }
 
         // Use AI-verified fields from frontend, or re-analyze if not present
@@ -29,7 +32,7 @@ export const reportIssue = async (req: Request, res: Response) => {
         try { tags = JSON.parse(ai_tags || '[]'); } catch { tags = []; }
 
         // If AI data wasn't pre-sent, run analysis now
-        if (!ai_risk_score) {
+        if (!ai_risk_score && imageFile) {
             const aiAnalysis = await analyzeIssueImage(imageFile.buffer, imageFile.mimetype);
             riskScore = aiAnalysis.risk_score;
             severityLabel = aiAnalysis.severity;
@@ -46,15 +49,17 @@ export const reportIssue = async (req: Request, res: Response) => {
         else if (riskScore >= 60) { priority = 'High'; }
         else if (riskScore >= 30) { priority = 'Medium'; }
 
-        // Upload image to Supabase Storage
-        const fileExt = imageFile.originalname.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-        const { error: storageError } = await supabase.storage
-            .from('issues')
-            .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
+        // Upload image to Supabase Storage (if not already uploaded via /validate)
+        if (!imageUrl && imageFile) {
+            const fileExt = imageFile.originalname.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+            const { error: storageError } = await supabase.storage
+                .from('issues')
+                .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
 
-        if (storageError) throw storageError;
-        const imageUrl = supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+            if (storageError) throw storageError;
+            imageUrl = supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+        }
 
         // Insert into Supabase
         const { data, error } = await supabase
@@ -89,21 +94,31 @@ export const reportIssue = async (req: Request, res: Response) => {
 
         if (error) throw error;
 
-        // Auto-create escalation record for critical issues
-        if (autoEscalate) {
-            await supabase.from('escalations').insert([{
-                report_id: data.id,
-                escalated_by: userId,
-                reason: `Auto-escalated: Risk Score ${riskScore}/100 (${severityLabel})`,
-                severity: 'critical',
-                resolved: false
-            }]);
-        }
-
-        const io = (req as any).io;
-        if (io) io.emit('new_issue', data);
-
+        // 🚀 Optimised: Send response immediately to unblock frontend
         res.status(201).json(data);
+
+        // 🚀 Non-critical tasks moved to "background"
+        (async () => {
+            try {
+                // Auto-create escalation record for critical issues
+                if (autoEscalate) {
+                    await supabase.from('escalations').insert([{
+                        report_id: data.id,
+                        escalated_by: userId,
+                        reason: `Auto-escalated: Risk Score ${riskScore}/100 (${severityLabel})`,
+                        severity: 'critical',
+                        resolved: false
+                    }]);
+                }
+
+                const io = (req as any).io;
+                if (io) io.emit('new_issue', data);
+            } catch (bgError) {
+                console.error('[Background Task Error]:', bgError);
+            }
+        })();
+
+        return; // Prevent further execution in try/catch
     } catch (error: any) {
         console.error(error);
         res.status(500).json({ error: error.message });
@@ -320,9 +335,23 @@ export const validateIssueImage = async (req: Request, res: Response) => {
 
         const aiAnalysis = await analyzeIssueImage(imageFile.buffer, imageFile.mimetype);
 
-        // Return full enriched analysis
+        // 🚀 Optimization: Upload image to storage NOW during validation
+        // This makes the final report submission nearly instant as the image is already persisted.
+        const fileExt = imageFile.originalname.split('.').pop();
+        const fileName = `${Date.now()}_v_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: storageError } = await supabase.storage
+            .from('issues')
+            .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
+
+        let imageUrl = '';
+        if (!storageError) {
+            imageUrl = supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+        }
+
+        // Return full enriched analysis + the stored image_url
         res.json({
             ...aiAnalysis,
+            image_url: imageUrl,
             verified_category: aiAnalysis.category,
             severity_int: Math.round(aiAnalysis.risk_score / 10)
         });

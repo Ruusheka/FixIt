@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useSpring, useTransform, animate } from 'framer-motion';
+import React, { useEffect, useState, useCallback } from 'react';
+import { motion, useSpring, useTransform } from 'framer-motion';
 import { supabase } from '../../services/supabase';
 import {
     AlertCircle,
@@ -66,46 +66,49 @@ export const DashboardStats: React.FC = () => {
         workers: 0
     });
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // Total Issues
-                const { count: total } = await supabase.from('issues').select('*', { count: 'exact', head: true });
+    const fetchStats = useCallback(async () => {
+        try {
+            const [
+                { count: total },
+                { count: resolved },
+                { count: inProgress },
+                { count: highRisk },
+                { count: citizens },
+                { count: workers }
+            ] = await Promise.all([
+                supabase.from('issues').select('*', { count: 'exact', head: true }),
+                supabase.from('issues').select('*', { count: 'exact', head: true }).in('status', ['resolved', 'RESOLVED', 'closed', 'CLOSED']),
+                supabase.from('issues').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
+                supabase.from('issues').select('*', { count: 'exact', head: true }).gt('risk_score', 0.7),
+                supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'citizen'),
+                supabase.from('workers').select('*', { count: 'exact', head: true })
+            ]);
 
-                // Resolved
-                const { count: resolved } = await supabase.from('issues').select('*', { count: 'exact', head: true })
-                    .in('status', ['resolved', 'RESOLVED', 'closed', 'CLOSED']);
-
-                // In Progress
-                const { count: inProgress } = await supabase.from('issues').select('*', { count: 'exact', head: true })
-                    .eq('status', 'in_progress');
-
-                // High Risk
-                const { count: highRisk } = await supabase.from('issues').select('*', { count: 'exact', head: true })
-                    .gt('risk_score', 0.7);
-
-                // Active Citizens
-                const { count: citizens } = await supabase.from('profiles').select('*', { count: 'exact', head: true })
-                    .eq('role', 'citizen');
-
-                // Active Workers
-                const { count: workers } = await supabase.from('workers').select('*', { count: 'exact', head: true });
-
-                setStats({
-                    total: total || 0,
-                    resolved: resolved || 0,
-                    inProgress: inProgress || 0,
-                    highRisk: highRisk || 0,
-                    citizens: citizens || 0,
-                    workers: workers || 0
-                });
-            } catch (err) {
-                console.error('Error fetching dashboard stats:', err);
-            }
-        };
-
-        fetchStats();
+            setStats({
+                total: total || 0,
+                resolved: resolved || 0,
+                inProgress: inProgress || 0,
+                highRisk: highRisk || 0,
+                citizens: citizens || 0,
+                workers: workers || 0
+            });
+        } catch (err) {
+            console.error('Error fetching dashboard stats:', err);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchStats();
+
+        const channel = supabase.channel('stats_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'issues' }, () => fetchStats())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchStats())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [fetchStats]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">

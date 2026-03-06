@@ -31,7 +31,7 @@ const TASK_TYPE_CONFIG = {
     image: { label: 'Photo Evidence', icon: ImageIcon, color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
     poll: { label: 'Poll / Survey', icon: BarChart2, color: 'bg-purple-500/10 text-purple-600 border-purple-500/20' },
     report_review: { label: 'Report Review', icon: ClipboardCheck, color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-    future_inspection: { label: 'Future Inspection', icon: Eye, color: 'bg-green-500/10 text-green-600 border-green-500/20' },
+    future_inspection: { label: 'Site Visit', icon: Eye, color: 'bg-green-500/10 text-green-600 border-green-500/20' },
 };
 
 const STATUS_CONFIG = {
@@ -117,7 +117,7 @@ export const AdminMicroTaskPage: React.FC = () => {
                                 ))}
                             </div>
                             <button
-                                onClick={fetchTasks}
+                                onClick={() => fetchTasks(true)}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-brand-secondary/40 hover:bg-brand-secondary/5 transition-all"
                             >
                                 <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
@@ -209,6 +209,11 @@ export const AdminMicroTaskPage: React.FC = () => {
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-brand-secondary' : i === 2 ? 'bg-amber-700 text-white' : 'bg-brand-secondary/5 text-brand-secondary/40'}`}>
                                         {i + 1}
                                     </div>
+                                    <div className="w-8 h-8 rounded-full bg-brand-secondary/10 flex items-center justify-center font-black text-sm overflow-hidden shrink-0">
+                                        {entry.citizen?.avatar_url
+                                            ? <img src={entry.citizen.avatar_url} className="w-full h-full object-cover" />
+                                            : (entry.citizen?.full_name?.[0] || 'C')}
+                                    </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-black text-brand-secondary uppercase tracking-tight truncate">{entry.citizen?.full_name || 'Anonymous'}</p>
                                         <p className="text-[8px] font-black text-brand-secondary/30 uppercase tracking-widest">{entry.level}</p>
@@ -255,10 +260,21 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
 
         try {
             console.log('[handleSubmit] 🚀 Deploying task with location:', location);
+
+            // Poll validation
+            if (type === 'poll') {
+                const validOptions = options.filter(o => o.trim() !== '');
+                if (validOptions.length < 2) {
+                    setError('Poll missions require at least 2 valid options.');
+                    setSubmitting(false);
+                    return;
+                }
+            }
+
             const payload = {
                 title, description, task_type: type, points,
                 end_time: endTime ? new Date(endTime).toISOString() : null,
-                poll_options: type === 'poll' ? options : null,
+                poll_options: type === 'poll' ? options.filter(o => o.trim() !== '') : null,
                 latitude: location?.lat,
                 longitude: location?.lng,
                 address: location?.address,
@@ -348,11 +364,11 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-widest px-1">Action Type</label>
-                                <select value={type} onChange={e => setType(e.target.value as any)} className="input-field py-4 font-black uppercase text-[10px] tracking-widest">
-                                    <option value="image">Photo Evidence</option>
-                                    <option value="poll">Poll / Voting</option>
-                                    <option value="report_review">Verify Report</option>
-                                    <option value="future_inspection">Site Audit</option>
+                                <select value={type} required onChange={e => setType(e.target.value as any)} className="input-field py-4 font-black uppercase text-[10px] tracking-widest">
+                                    <option value="image">Photo Evidence </option>
+                                    <option value="poll">Poll </option>
+                                    <option value="report_review">Feedback Review</option>
+                                    <option value="future_inspection">Site Visit </option>
                                 </select>
                             </div>
                             <div className="space-y-2">
@@ -368,9 +384,10 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-widest px-1">Mission Deadline</label>
+                            <label className="text-[10px] font-black text-brand-secondary/30 uppercase tracking-widest px-1">Mission Deadline (Required)</label>
                             <input
                                 type="datetime-local"
+                                required
                                 id="mission_deadline"
                                 name="mission_deadline"
                                 value={endTime} onChange={e => setEndTime(e.target.value)}
@@ -379,14 +396,46 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
                         </div>
 
                         {type === 'poll' && (
-                            <div className="space-y-3 p-4 bg-purple-500/5 rounded-2xl border border-purple-500/10">
-                                <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Voting Options (Comma separated)</label>
-                                <input
-                                    value={options.join(', ')}
-                                    onChange={e => setOptions(e.target.value.split(',').map(s => s.trim()).filter(s => s))}
-                                    className="w-full bg-transparent outline-none text-xs font-bold text-brand-secondary"
-                                    placeholder="e.g. Fixed, Not Fixed, Improving"
-                                />
+                            <div className="space-y-4 p-6 bg-purple-500/5 rounded-3xl border border-purple-500/10">
+                                <div className="flex items-center justify-between px-1">
+                                    <label className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Voting Options (Multi-Choice)</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOptions([...options, ''])}
+                                        className="text-[9px] font-black text-purple-600 hover:text-purple-700 uppercase tracking-widest flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 rounded-lg transition-all"
+                                    >
+                                        <Plus size={12} /> Add Choice
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {options.map((opt, i) => (
+                                        <div key={i} className="flex items-center gap-3 group">
+                                            <div className="flex-1 relative">
+                                                <input
+                                                    required
+                                                    value={opt}
+                                                    onChange={e => {
+                                                        const newOpts = [...options];
+                                                        newOpts[i] = e.target.value;
+                                                        setOptions(newOpts);
+                                                    }}
+                                                    className="w-full bg-white border border-purple-500/10 text-xs font-bold text-brand-secondary px-4 py-3 rounded-xl focus:border-purple-500/40 outline-none transition-all"
+                                                    placeholder={`Option ${i + 1}`}
+                                                />
+                                            </div>
+                                            {options.length > 2 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                                                    className="p-3 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[8px] font-black text-purple-500/40 uppercase tracking-widest px-1">At least 2 options required for a valid poll</p>
                             </div>
                         )}
                     </div>

@@ -11,7 +11,9 @@ import { MinimalLayout } from '../components/MinimalLayout';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { analyzeImageWithGemini, AIAnalysisResult } from '../services/gemini';
+import { compressImage } from '../services/image';
 import { LocationPickerMap } from '../components/citizen/LocationPickerMap';
+import { notifyAdminsNewReport } from '../hooks/useNotifications';
 
 // Use AIAnalysisResult from gemini service instead of local interface
 type AIAnalysis = AIAnalysisResult;
@@ -61,35 +63,39 @@ export const ReportIssue: React.FC = () => {
 
     const handleImageChange = async (file: File) => {
         if (file) {
-            setImage(file);
-            setPreview(URL.createObjectURL(file));
+            setLoading(true);
+            setIsAnalyzing(true);
             setAiError(null);
             setAiAnalysis(null);
             setAiConfirmed(false);
-            setIsAnalyzing(true);
             setLocationCaptured(false);
 
-            // Fetch initial GPS
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        setLatitude(pos.coords.latitude);
-                        setLongitude(pos.coords.longitude);
-                        setLocationCaptured(true);
-                    },
-                    (err) => console.warn("Initial GPS failed:", err),
-                    { timeout: 5000 }
-                );
-            }
-
             try {
+                // 🚀 Compress image first to reduce network payload
+                const compressedFile = await compressImage(file);
+                setImage(compressedFile);
+                setPreview(URL.createObjectURL(compressedFile));
+
+                // Fetch initial GPS
+                if ("geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            setLatitude(pos.coords.latitude);
+                            setLongitude(pos.coords.longitude);
+                            setLocationCaptured(true);
+                        },
+                        (err) => console.warn("Initial GPS failed:", err),
+                        { timeout: 5000 }
+                    );
+                }
+
                 // 🚀 Calls Gemini DIRECTLY from the browser — no backend round trip!
-                const result = await analyzeImageWithGemini(file);
+                const result = await analyzeImageWithGemini(compressedFile);
 
                 if (result.ai_failed) {
                     // Client-side failed → try backend as fallback
                     const formData = new FormData();
-                    formData.append('image', file);
+                    formData.append('image', compressedFile);
                     const resp = await fetch(
                         `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/issues/validate`,
                         { method: 'POST', body: formData }
@@ -126,6 +132,7 @@ export const ReportIssue: React.FC = () => {
                 });
             } finally {
                 setIsAnalyzing(false);
+                setLoading(false);
             }
         }
     };
@@ -165,7 +172,6 @@ export const ReportIssue: React.FC = () => {
             const { data: { session } } = await supabase.auth.getSession();
 
             const formData = new FormData();
-            formData.append('image', image);
             formData.append('category', category);
             formData.append('description', description);
             formData.append('title', `${category} Report`);
@@ -181,6 +187,9 @@ export const ReportIssue: React.FC = () => {
                 formData.append('ai_impact', aiAnalysis.impact);
                 formData.append('ai_confidence', aiAnalysis.ai_confidence.toString());
                 formData.append('ai_generated', aiAnalysis.ai_failed ? 'false' : 'true');
+                if (aiAnalysis.image_url) {
+                    formData.append('existing_image_url', aiAnalysis.image_url);
+                }
             }
 
             const submitReport = async (lat: string, lng: string, gpsAddr: string) => {
@@ -197,6 +206,11 @@ export const ReportIssue: React.FC = () => {
                 formData.append('longitude', lng);
                 formData.append('address', finalAddr);
 
+                // 🚀 PERFORMANCE FIX: If image was already uploaded during validation, don't send it again
+                if (!aiAnalysis?.image_url) {
+                    formData.append('image', image);
+                }
+
                 const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/issues`, {
                     method: 'POST',
                     headers: {
@@ -206,7 +220,12 @@ export const ReportIssue: React.FC = () => {
                 });
 
                 if (response.ok) {
+                    const reportData = await response.json().catch(() => null);
                     setSubmitted(true);
+                    // Notify admins about the new report (fire-and-forget)
+                    if (reportData?.id) {
+                        notifyAdminsNewReport(reportData.id, category || description.slice(0, 50) || 'New Report').catch(console.error);
+                    }
                 } else {
                     const errData = await response.json();
                     setAiError(`Submission failed: ${errData.error || 'Check server logs'}`);

@@ -10,6 +10,7 @@ import { MinimalLayout } from '../components/MinimalLayout';
 import { useMicrotasks, Microtask, MicrotaskResponse } from '../hooks/useMicrotasks';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabase';
+import { notifyAdminMicrotaskResponse } from '../hooks/useNotifications';
 import { format } from 'date-fns';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -98,6 +99,9 @@ export const CitizenMicroTaskDetailPage: React.FC = () => {
                 content: content,
                 image_url: image_url
             });
+
+            // Notify admin about submitted response (fire-and-forget)
+            notifyAdminMicrotaskResponse(task.id, task.title, profile.full_name || 'A citizen').catch(console.error);
 
             setSuccess(true);
             loadTask();
@@ -191,8 +195,45 @@ export const CitizenMicroTaskDetailPage: React.FC = () => {
                                     </div>
 
                                     {myResp.image_url && <img src={myResp.image_url} className="w-full h-64 object-cover rounded-[32px] mt-8" />}
-                                    {myResp.content && <p className="mt-6 p-6 bg-white rounded-2xl italic text-brand-secondary/70 font-medium">"{myResp.content}"</p>}
-                                    {myResp.admin_note && <div className="mt-6 p-5 bg-red-500/5 border border-red-500/10 text-red-600 font-bold text-xs uppercase tracking-tight rounded-xl">Reason for rejection: {myResp.admin_note}</div>}
+
+                                    {task.task_type === 'poll' ? (
+                                        <div className="mt-8 space-y-5 p-6 bg-white rounded-[32px] border border-brand-secondary/5">
+                                            <p className="text-[10px] font-black text-brand-secondary/40 uppercase tracking-widest px-2 mb-2">Ground Intelligence (Live Results)</p>
+                                            {task.poll_options?.map(opt => {
+                                                const counts: Record<string, number> = {};
+                                                task.poll_options?.forEach(o => counts[o] = 0);
+                                                task.responses?.forEach(r => { if (r.content && counts[r.content] !== undefined) counts[r.content]++; });
+                                                const total = Object.values(counts).reduce((a, b) => a + b, 0);
+                                                const count = counts[opt] || 0;
+                                                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                                                const isMyChoice = myResp.content === opt;
+
+                                                return (
+                                                    <div key={opt} className="space-y-2">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-xs font-black uppercase tracking-tight ${isMyChoice ? 'text-purple-600' : 'text-brand-secondary'}`}>
+                                                                    {opt} {isMyChoice && <span className="text-[8px] bg-purple-500 text-white px-2 py-0.5 rounded-full ml-2">MY CHOICE</span>}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-brand-secondary/40">{pct}% ({count} votes)</span>
+                                                        </div>
+                                                        <div className="h-6 bg-brand-secondary/5 rounded-full overflow-hidden relative border border-brand-secondary/5">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${pct}%` }}
+                                                                className={`h-full ${isMyChoice ? 'bg-purple-500' : 'bg-brand-secondary/10'}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        myResp.content && <p className="mt-6 p-6 bg-white rounded-2xl italic text-brand-secondary/70 font-medium font-mono border border-brand-secondary/5 shadow-inner">"{myResp.content}"</p>
+                                    )}
+
+                                    {myResp.admin_note && <div className="mt-6 p-5 bg-red-500/5 border border-red-500/10 text-red-600 font-bold text-xs uppercase tracking-tight rounded-xl">Field Correction Required: {myResp.admin_note}</div>}
                                 </motion.div>
                             ) : isClosed ? (
                                 <div className="minimal-card p-20 text-center bg-brand-secondary/5 border-brand-secondary/5 border-2 border-dashed">

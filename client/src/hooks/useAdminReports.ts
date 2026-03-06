@@ -25,13 +25,15 @@ export const useAdminReports = () => {
         sortBy: (searchParams.get('sortBy') as any) || 'newest',
     });
 
-    const fetchReports = useCallback(async () => {
-        setLoading(true);
+    const fetchReports = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
             let query = supabase
                 .from('issues')
                 .select(`
-                  *,
+                  id, title, description, address, latitude, longitude, 
+                  risk_score, risk_score_int, user_id, status, severity, 
+                  priority, is_escalated, created_at, resolved_at, image_url,
                   reporter:profiles!user_id(id, email, full_name, role, avatar_url),
                   assignments:report_assignments(worker:profiles!report_assignments_worker_id_fkey(id, email, full_name, role, avatar_url))
                 `);
@@ -67,7 +69,7 @@ export const useAdminReports = () => {
                 reporter: Array.isArray(r.reporter) ? r.reporter[0] : r.reporter
             })) as Report[];
 
-            // Manual Filter for Overdue (since it's a dynamic calculation usually, but we check created_at)
+            // Manual Filter for Overdue
             if (filters.overdue) {
                 const seventyTwoHoursAgo = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
                 const resolvedStatuses = ['resolved', 'RESOLVED', 'closed', 'CLOSED'];
@@ -103,21 +105,21 @@ export const useAdminReports = () => {
         } catch (err) {
             console.error('Error fetching reports:', err);
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [filters]);
 
     useEffect(() => {
-        fetchReports();
+        fetchReports(false); // Initial load (or true if you want spinner)
 
         // Realtime Subscriptions
         const channel = supabase
             .channel('admin_reports_changes')
             .on('postgres_changes', { event: '*', table: 'issues', schema: 'public' }, () => {
-                fetchReports();
+                fetchReports(true); // Background refresh
             })
             .on('postgres_changes', { event: '*', table: 'report_assignments', schema: 'public' }, () => {
-                fetchReports();
+                fetchReports(true); // Background refresh
             })
             .subscribe();
 

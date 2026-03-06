@@ -24,6 +24,7 @@ export interface AIAnalysisResult {
         city: string;
         confidence: number;
     };
+    image_url?: string;
 }
 
 const FALLBACK: AIAnalysisResult = {
@@ -80,7 +81,8 @@ export const analyzeImageWithGemini = async (file: File): Promise<AIAnalysisResu
                 landmark: data.location_detected?.landmark || '',
                 city: data.location_detected?.city || '',
                 confidence: Math.min(100, Math.max(0, Number(data.location_detected?.confidence) || 0))
-            }
+            },
+            image_url: data.image_url
         };
     } catch (err: any) {
         console.error('[Gemini] Request failed:', err?.message || err);

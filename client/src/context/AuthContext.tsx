@@ -63,13 +63,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchProfile(session.user.id).then(setProfile);
+        const initAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    const profileData = await fetchProfile(session.user.id);
+                    setProfile(profileData);
+                }
+            } catch (err) {
+                console.error('Auth initialization error:', err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
-        });
+        };
+
+        initAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -77,10 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (session?.user) {
                 const profileData = await fetchProfile(session.user.id);
                 setProfile(profileData);
+                setLoading(false);
             } else {
                 setProfile(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => subscription.unsubscribe();

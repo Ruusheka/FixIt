@@ -1,11 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
-    Camera, FileText, Megaphone, ListChecks,
-    LayoutDashboard, ClipboardCheck, Shield, Radio,
-    BarChart3, Target, Zap, ArrowRight, ShieldCheck,
-    Award, Heart, MessageSquare, Trophy
+    Heart, MessageSquare, ShieldCheck, Zap, ArrowRight
 } from 'lucide-react';
 import { MinimalLayout } from '../components/MinimalLayout';
 import { adminNavItems } from '../constants/adminNav';
@@ -13,55 +9,9 @@ import { supabase } from '../services/supabase';
 
 const navItems = adminNavItems;
 
-const engagementCommands = [
-    {
-        label: 'Report Issue',
-        icon: <Camera className="w-6 h-6" />,
-        path: '/citizen/report',
-        description: 'Citizen intake portal for issue collection',
-        category: 'Intake'
-    },
-    {
-        label: 'My Reports',
-        icon: <FileText className="w-6 h-6" />,
-        path: '/citizen/reports',
-        description: 'User tracker for submitted tickets',
-        category: 'Tracking'
-    },
-    {
-        label: 'Announcements',
-        icon: <Megaphone className="w-6 h-6" />,
-        path: '/citizen/announcements',
-        description: 'Global broadcast channel for notifications',
-        category: 'Communication'
-    },
-    {
-        label: 'Micro-Tasks',
-        icon: <ListChecks className="w-6 h-6" />,
-        path: '/citizen/micro-tasks',
-        description: 'Community-led task resolution system',
-        category: 'Ops'
-    },
-    {
-        label: 'Leaderboard',
-        icon: <Trophy className="w-6 h-6" />,
-        path: '/citizen/rewards',
-        description: 'Citizen contribution rankings & rewards',
-        category: 'Engagement'
-    },
-    {
-        label: 'AI Insights',
-        icon: <Zap className="w-6 h-6" />,
-        path: '/admin/analytics',
-        description: 'Advanced predictive modeling & analysis',
-        category: 'Intelligence'
-    }
-];
-
 
 
 export const AdminEngageCommand: React.FC = () => {
-    const navigate = useNavigate();
     const [stats, setStats] = React.useState({
         totalReports: 0,
         activeTasks: 0,
@@ -140,57 +90,7 @@ export const AdminEngageCommand: React.FC = () => {
                     </div>
                 </section>
 
-                {/* Main Command Grid */}
-                <section className="space-y-8">
-                    <div className="flex items-center justify-between border-b border-brand-secondary/5 pb-8">
-                        <div>
-                            <h2 className="text-3xl font-black text-brand-secondary uppercase tracking-tighter">Operational Command Interface</h2>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-secondary/30 mt-1">Direct access to citizen-facing engagement modules</p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {engagementCommands.map((command, idx) => (
-                            <motion.button
-                                key={command.label}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                onClick={() => navigate(command.path)}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="minimal-card p-8 text-left group hover:bg-brand-secondary transition-all duration-500 relative overflow-hidden"
-                            >
-                                <div className="relative z-10 flex flex-col h-full">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="p-3.5 rounded-2xl bg-brand-secondary/5 text-brand-secondary group-hover:bg-brand-primary transition-all">
-                                            {command.icon}
-                                        </div>
-                                        <div className="px-3 py-1 rounded-full bg-brand-secondary/5 group-hover:bg-brand-primary/10 transition-all">
-                                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-secondary group-hover:text-brand-primary">
-                                                {command.category}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2 flex-1">
-                                        <h3 className="text-2xl font-black text-brand-secondary group-hover:text-brand-primary uppercase tracking-tighter transition-colors">
-                                            {command.label}
-                                        </h3>
-                                        <p className="text-xs font-bold text-brand-secondary/40 group-hover:text-brand-primary/60 uppercase tracking-tighter transition-colors leading-relaxed">
-                                            {command.description}
-                                        </p>
-                                    </div>
-                                    <div className="mt-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-secondary/20 group-hover:text-brand-primary/80">
-                                        Active Link State <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                                    </div>
-                                </div>
-
-                                {/* Abstract background patterns for premium feel */}
-                                <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-brand-secondary/5 rounded-full blur-2xl group-hover:bg-brand-primary/10 transition-all" />
-                            </motion.button>
-                        ))}
-                    </div>
-                </section>
 
                 {/* Engage Control Panel / Transmission Initialization */}
                 <section className="minimal-card p-12 bg-white relative overflow-hidden border border-brand-secondary/5 shadow-2xl">

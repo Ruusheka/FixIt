@@ -7,13 +7,14 @@ const reportIssue = async (req, res) => {
     try {
         const { title, description, category, latitude, longitude, address, 
         // AI pre-verified fields (sent from frontend after user confirmation)
-        ai_category, ai_tags, ai_description, ai_risk_score, ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated } = req.body;
+        ai_category, ai_tags, ai_description, ai_risk_score, ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated, image_url: existing_image_url } = req.body;
         const userId = req.user?.id || null;
         console.log('--- Issue Submission ---');
         console.log('Authenticated User ID:', userId);
         const imageFile = req.file;
-        if (!imageFile) {
-            return res.status(400).json({ error: 'Image is required' });
+        let imageUrl = existing_image_url;
+        if (!imageFile && !imageUrl) {
+            return res.status(400).json({ error: 'Image is required (either file or url)' });
         }
         // Use AI-verified fields from frontend, or re-analyze if not present
         let analysisData = {};
@@ -29,7 +30,7 @@ const reportIssue = async (req, res) => {
             tags = [];
         }
         // If AI data wasn't pre-sent, run analysis now
-        if (!ai_risk_score) {
+        if (!ai_risk_score && imageFile) {
             const aiAnalysis = await (0, ai_1.analyzeIssueImage)(imageFile.buffer, imageFile.mimetype);
             riskScore = aiAnalysis.risk_score;
             severityLabel = aiAnalysis.severity;
@@ -51,15 +52,17 @@ const reportIssue = async (req, res) => {
         else if (riskScore >= 30) {
             priority = 'Medium';
         }
-        // Upload image to Supabase Storage
-        const fileExt = imageFile.originalname.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-        const { error: storageError } = await supabase_1.supabase.storage
-            .from('issues')
-            .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
-        if (storageError)
-            throw storageError;
-        const imageUrl = supabase_1.supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+        // Upload image to Supabase Storage (if not already uploaded via /validate)
+        if (!imageUrl && imageFile) {
+            const fileExt = imageFile.originalname.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+            const { error: storageError } = await supabase_1.supabase.storage
+                .from('issues')
+                .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
+            if (storageError)
+                throw storageError;
+            imageUrl = supabase_1.supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+        }
         // Insert into Supabase
         const { data, error } = await supabase_1.supabase
             .from('issues')
@@ -92,20 +95,30 @@ const reportIssue = async (req, res) => {
             .single();
         if (error)
             throw error;
-        // Auto-create escalation record for critical issues
-        if (autoEscalate) {
-            await supabase_1.supabase.from('escalations').insert([{
-                    report_id: data.id,
-                    escalated_by: userId,
-                    reason: `Auto-escalated: Risk Score ${riskScore}/100 (${severityLabel})`,
-                    severity: 'critical',
-                    resolved: false
-                }]);
-        }
-        const io = req.io;
-        if (io)
-            io.emit('new_issue', data);
+        // 🚀 Optimised: Send response immediately to unblock frontend
         res.status(201).json(data);
+        // 🚀 Non-critical tasks moved to "background"
+        (async () => {
+            try {
+                // Auto-create escalation record for critical issues
+                if (autoEscalate) {
+                    await supabase_1.supabase.from('escalations').insert([{
+                            report_id: data.id,
+                            escalated_by: userId,
+                            reason: `Auto-escalated: Risk Score ${riskScore}/100 (${severityLabel})`,
+                            severity: 'critical',
+                            resolved: false
+                        }]);
+                }
+                const io = req.io;
+                if (io)
+                    io.emit('new_issue', data);
+            }
+            catch (bgError) {
+                console.error('[Background Task Error]:', bgError);
+            }
+        })();
+        return; // Prevent further execution in try/catch
     }
     catch (error) {
         console.error(error);
@@ -131,7 +144,7 @@ exports.getIssues = getIssues;
 const updateStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const updates = req.body; // Allows passing { priority: 'High' } or { status: 'in_progress' }
         // Fetch current status to check for lock
         const { data: currentIssue, error: fetchError } = await supabase_1.supabase
             .from('issues')
@@ -145,7 +158,7 @@ const updateStatus = async (req, res) => {
         }
         const { data, error } = await supabase_1.supabase
             .from('issues')
-            .update({ status })
+            .update(updates)
             .eq('id', id)
             .select()
             .single();
@@ -187,8 +200,8 @@ const submitProof = async (req, res) => {
             .insert([{
                 report_id: id,
                 worker_id: workerId,
-                image_url: imageUrl,
-                description
+                after_image_url: imageUrl,
+                worker_notes: description
             }]);
         if (proofError)
             throw proofError;
@@ -215,7 +228,7 @@ exports.submitProof = submitProof;
 const verifyIssue = async (req, res) => {
     try {
         const { id } = req.params;
-        const { action, comment } = req.body; // 'approved' or 'rejected'
+        const { action, comment, rating } = req.body; // 'approved' or 'rejected'
         const adminId = req.user?.id;
         if (action === 'rejected' && !comment) {
             return res.status(400).json({ error: 'Comment is mandatory if proof is rejected.' });
@@ -250,6 +263,15 @@ const verifyIssue = async (req, res) => {
                 .eq('report_id', id)
                 .single();
             if (assignment) {
+                if (rating) {
+                    await supabase_1.supabase.from('worker_ratings').insert([{
+                            report_id: id,
+                            worker_id: assignment.worker_id,
+                            rating: Number(rating),
+                            remark: comment || '',
+                            rated_by: adminId
+                        }]);
+                }
                 const { data: metrics } = await supabase_1.supabase
                     .from('worker_metrics')
                     .select('total_resolved')
@@ -293,9 +315,21 @@ const validateIssueImage = async (req, res) => {
         }
         console.log('[Validate] Image received:', imageFile.originalname, imageFile.mimetype, imageFile.size, 'bytes');
         const aiAnalysis = await (0, ai_1.analyzeIssueImage)(imageFile.buffer, imageFile.mimetype);
-        // Return full enriched analysis
+        // 🚀 Optimization: Upload image to storage NOW during validation
+        // This makes the final report submission nearly instant as the image is already persisted.
+        const fileExt = imageFile.originalname.split('.').pop();
+        const fileName = `${Date.now()}_v_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: storageError } = await supabase_1.supabase.storage
+            .from('issues')
+            .upload(fileName, imageFile.buffer, { contentType: imageFile.mimetype });
+        let imageUrl = '';
+        if (!storageError) {
+            imageUrl = supabase_1.supabase.storage.from('issues').getPublicUrl(fileName).data.publicUrl;
+        }
+        // Return full enriched analysis + the stored image_url
         res.json({
             ...aiAnalysis,
+            image_url: imageUrl,
             verified_category: aiAnalysis.category,
             severity_int: Math.round(aiAnalysis.risk_score / 10)
         });

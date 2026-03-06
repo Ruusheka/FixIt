@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Report, Profile, ReportPriority } from '../../types/reports';
+import { notifyWorkerAssigned } from '../../hooks/useNotifications';
 
 interface AdminAssignmentPanelProps {
     report: Report;
@@ -137,14 +138,8 @@ export const AdminAssignmentPanel: React.FC<AdminAssignmentPanelProps> = ({ repo
 
             if (activityError) console.error("Activity Log Error (Non-blocking):", activityError);
 
-            // 5. Send notification to worker
-            await (supabase.from('notifications') as any).insert({
-                user_id: selectedWorkerId,
-                title: 'New Task Assigned',
-                message: `You have been assigned to: ${report.title}`,
-                type: 'assignment',
-                link: `/worker/works/${report.id}`,
-            });
+            // 5. Notify the assigned worker via the Notification System
+            await notifyWorkerAssigned(selectedWorkerId, report.id, report.title);
 
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);

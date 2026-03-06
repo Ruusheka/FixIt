@@ -14,9 +14,9 @@ export const useOperations = () => {
     const [stats, setStats] = useState({ avgResolutionTime: '0h', compliance: '100%' });
     const [loading, setLoading] = useState(true);
 
-    const fetchData = async () => {
+    const fetchData = async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) return;
 
@@ -57,14 +57,19 @@ export const useOperations = () => {
         fetchData();
 
         socket.on('new_broadcast', (newBroadcast: Broadcast) => {
-            setBroadcasts(prev => [newBroadcast, ...prev]);
+            console.log(' [Link] Real-time tactical signal intercepted:', newBroadcast.title);
+            setBroadcasts(prev => {
+                // Prevent duplicate if we already added it locally
+                if (prev.some(b => b.id === newBroadcast.id)) return prev;
+                return [newBroadcast, ...prev];
+            });
         });
 
         const channels = [
-            supabase.channel('workers-changes').on('postgres_changes', { event: '*', table: 'workers', schema: 'public' }, fetchData).subscribe(),
-            supabase.channel('escalations-changes').on('postgres_changes', { event: '*', table: 'escalations', schema: 'public' }, fetchData).subscribe(),
-            supabase.channel('broadcasts-changes').on('postgres_changes', { event: '*', table: 'broadcasts', schema: 'public' }, fetchData).subscribe(),
-            supabase.channel('logs-changes').on('postgres_changes', { event: 'INSERT', table: 'admin_activity_logs', schema: 'public' }, fetchData).subscribe()
+            supabase.channel('workers-changes').on('postgres_changes', { event: '*', table: 'workers', schema: 'public' }, () => fetchData(true)).subscribe(),
+            supabase.channel('escalations-changes').on('postgres_changes', { event: '*', table: 'escalations', schema: 'public' }, () => fetchData(true)).subscribe(),
+            supabase.channel('broadcasts-changes').on('postgres_changes', { event: '*', table: 'broadcasts', schema: 'public' }, () => fetchData(true)).subscribe(),
+            supabase.channel('logs-changes').on('postgres_changes', { event: 'INSERT', table: 'admin_activity_logs', schema: 'public' }, () => fetchData(true)).subscribe()
         ];
 
         return () => {
@@ -101,7 +106,7 @@ export const useOperations = () => {
         const { error } = await (supabase.from('sla_rules') as any).update({ max_hours: hours }).eq('priority', priority);
         if (!error) {
             logActivity(`Updated SLA for ${priority} to ${hours}h`, 'SLA');
-            fetchData();
+            fetchData(true);
         }
     };
 
@@ -118,34 +123,63 @@ export const useOperations = () => {
 
         if (!error) {
             logActivity(`Broadcasted: ${title}`, 'ANNOUNCEMENT');
-            fetchData();
+            fetchData(true);
         }
     };
 
     const createBroadcast = async (payload: Partial<Broadcast>) => {
         try {
+            console.log('🚀 [Command] Initiating direct transmission sequence...');
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session?.access_token) {
-                alert("Session expired. Please re-login.");
+            if (!session?.user) {
+                alert("CRITICAL: Session lost. Security re-authentication required.");
                 return;
             }
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/broadcasts`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify(payload)
+            // Remove targetDept as requested
+            if ('target_department_id' in payload) {
+                delete payload.target_department_id;
+            }
+
+            const dbPayload = {
+                ...payload,
+                created_by: session.user.id,
+                is_active: payload.is_active !== undefined ? payload.is_active : true,
+                audience: payload.audience || 'Both'
+            };
+
+            const { data, error } = await supabase
+                .from('broadcasts')
+                .insert([dbPayload] as any)
+                .select('*, author:profiles!created_by(*)')
+                .single();
+
+            if (error) {
+                throw error;
+            }
+
+            const responseData = data as any;
+            console.log('✅ [Command] Broadcast transmission confirmed:', responseData.id);
+
+            // Log activity
+            await supabase.from('admin_activity_logs').insert([{
+                admin_id: session.user.id,
+                action: `Created broadcast: ${payload.title}`,
+                target_type: 'BROADCAST',
+                target_id: responseData.id
+            }] as any);
+
+            // 🚀 Optimization: Update local state immediately
+            setBroadcasts(prev => {
+                if (prev.some(b => b.id === responseData.id)) return prev;
+                return [responseData as Broadcast, ...prev];
             });
 
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Failed to transmit broadcast');
-
-            fetchData();
-            return result;
+            // Trigger refetch just to be safe
+            fetchData(true);
+            return responseData;
         } catch (error: any) {
-            console.error('Broadcast Transmission Error:', error);
+            console.error('❌ [Signal Failure] Tactical breach in transmission:', error);
             alert(`Signal Failure: ${error.message}`);
             throw error;
         }
@@ -166,7 +200,7 @@ export const useOperations = () => {
                 throw new Error(result.error || 'Failed to terminate broadcast');
             }
 
-            fetchData();
+            fetchData(true);
         } catch (error: any) {
             console.error('Delete Error:', error);
             alert(`Termination Error: ${error.message}`);

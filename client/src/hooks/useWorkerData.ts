@@ -10,93 +10,77 @@ export const useWorkerData = () => {
     const [assignments, setAssignments] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (showLoading = true) => {
         if (!profile?.id) return;
-        setLoading(true);
+        if (showLoading) setLoading(true);
 
         try {
-            // Fetch Metrics
-            const { data: metricData, error: metricError } = await supabase
-                .from('worker_metrics')
-                .select('*')
-                .eq('worker_id', profile.id)
-                .single();
+            // Parallel fetch of Metrics and Assignments
+            const [metricRes, assignmentRes] = await Promise.all([
+                supabase
+                    .from('worker_metrics')
+                    .select('worker_id, total_assigned, total_resolved, rework_count, rating_avg, badge_level, last_updated')
+                    .eq('worker_id', profile.id)
+                    .maybeSingle(),
+                (supabase.from('report_assignments') as any)
+                    .select(`
+                        deadline, priority, created_at, is_active, worker_id,
+                        issues!inner(id, title, description, address, latitude, longitude, risk_score, status, image_url, created_at)
+                    `)
+                    .eq('worker_id', profile.id)
+                    .order('created_at', { ascending: false })
+            ]);
 
-            if (!metricError && metricData) {
-                setMetrics(metricData as WorkerMetrics);
+            if (metricRes.data) {
+                setMetrics(metricRes.data as WorkerMetrics);
             }
 
-            // Fetch Active Assignments starting from the assignment table
-            // This is more robust for detecting new columns like 'deadline'
-            // Fetch All Assignments (including history for calendar)
-            const { data: assignmentRecords, error: assignmentError } = await (supabase.from('report_assignments') as any)
-                .select(`
-                    deadline,
-                    priority,
-                    created_at,
-                    is_active,
-                    worker_id,
-                    issues!inner(*)
-                `)
-                .eq('worker_id', profile.id)
-                .order('created_at', { ascending: false });
-
-            if (assignmentError) {
-                console.error('Assignment Fetch Error:', assignmentError);
-                // If it still fails, it might be the column. Let's try to fetch issues only as fallback
-                const { data: fallbackData } = await (supabase.from('issues') as any)
-                    .select('*')
-                    .eq('assigned_worker', profile.id)
-                    .in('status', ['assigned', 'in_progress', 'reopened']);
-
-                if (fallbackData) {
-                    setAssignments(fallbackData as Report[]);
-                }
-            } else if (assignmentRecords) {
-                // Map to compatible format: Report objects with assignments array
-                const mappedData = assignmentRecords.map((record: any) => ({
+            if (assignmentRes.data) {
+                const mappedData = assignmentRes.data.map((record: any) => ({
                     ...record.issues,
                     priority: record.priority || record.issues.priority,
                     report_assignments: [record]
                 }));
                 setAssignments(mappedData as Report[]);
+            } else if (assignmentRes.error) {
+                console.error('Assignment Fetch Error:', assignmentRes.error);
             }
+
         } catch (err) {
             console.error('Error fetching worker data:', err);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     }, [profile?.id]);
 
     useEffect(() => {
-        fetchData();
+        fetchData(true);
 
-        // Optional: Socket.io real-time for immediate task updates
-        socket.on('issue_updated', (updatedIssue: any) => {
-            fetchData(); // Simplest approach: refetch to ensure assignments and metrics sync
-        });
-
-        socket.on('new_issue', () => {
-            fetchData();
-        });
-
-        const metricsChannel = supabase.channel('worker_metrics_changes')
+        // Realtime updates for Worker data
+        const channel = supabase.channel(`worker_updates_${profile?.id}`)
             .on('postgres_changes', {
-                event: 'UPDATE',
+                event: '*',
                 schema: 'public',
                 table: 'worker_metrics',
                 filter: `worker_id=eq.${profile?.id}`
-            }, (payload) => {
-                setMetrics(payload.new as WorkerMetrics);
-            })
+            }, () => fetchData(false))
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'report_assignments',
+                filter: `worker_id=eq.${profile?.id}`
+            }, () => fetchData(false))
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'issues'
+            }, () => fetchData(false)) // Refresh if issues change
             .subscribe();
 
         return () => {
-            socket.off('issue_updated', () => { });
-            socket.off('new_issue');
-            supabase.removeChannel(metricsChannel);
+            supabase.removeChannel(channel);
         };
-    }, [fetchData]);
+    }, [fetchData, profile?.id]);
 
     return { metrics, assignments, loading, refetch: fetchData };
 };

@@ -27,26 +27,41 @@ export const createBroadcast = async (req: Request, res: Response) => {
                 geotag_radius: geotag_radius || null,
                 is_active: !scheduled_at // Active immediately if not scheduled
             }])
-            .select()
+            .select('*, author:profiles!created_by(*)')
             .single();
 
-        if (error) throw error;
-
-        // Log Activity
-        await supabase.from('admin_activity_logs').insert([{
-            admin_id: adminId,
-            action: `Created broadcast: ${title}`,
-            target_type: 'BROADCAST',
-            target_id: data.id
-        }]);
-
-        // Emit real-time event
-        const io = (req as any).io;
-        if (io) {
-            io.emit('new_broadcast', data);
+        if (error) {
+            console.error('❌ [Broadcast Error] Database insert failed:', error);
+            throw error;
         }
 
+        console.log('✅ [Broadcast] New alert created:', data.id, `(${title})`);
+
+        // 🚀 Optimization: Send response immediately to unblock admin dashboard
         res.status(201).json(data);
+
+        // 🚀 Non-critical tasks moved to background
+        (async () => {
+            try {
+                // Log Activity
+                await supabase.from('admin_activity_logs').insert([{
+                    admin_id: adminId,
+                    action: `Created broadcast: ${title}`,
+                    target_type: 'BROADCAST',
+                    target_id: data.id
+                }]);
+
+                // Emit real-time event
+                const io = (req as any).io;
+                if (io) {
+                    io.emit('new_broadcast', data);
+                }
+            } catch (bgError) {
+                console.error('[Broadcast Background Error]:', bgError);
+            }
+        })();
+
+        return;
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

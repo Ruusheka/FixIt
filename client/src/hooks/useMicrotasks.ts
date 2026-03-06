@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
+import { notifyCitizensNewMicrotask } from './useNotifications';
 
 export interface Microtask {
     id: string;
@@ -64,88 +65,92 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
             .lt('end_time', now);
     };
 
-    const fetchTasks = useCallback(async () => {
-        setLoading(true);
-        await autoCloseOverdue();
+    const fetchTasks = useCallback(async (showLoading = true) => {
+        if (showLoading) setLoading(true);
+        try {
+            await autoCloseOverdue();
 
-        // Try the full join first
-        let { data, error } = await (supabase.from('microtasks') as any)
-            .select(`
-                *,
-                creator:profiles(full_name, email),
-                responses:microtask_responses(
-                    id, citizen_id, response_type, content, image_url,
-                    submitted_at, approved, rejected, admin_note, points_awarded,
-                    citizen:profiles(full_name, email, avatar_url)
-                )
-            `)
-            .order('created_at', { ascending: false });
+            // Perform tasks and leaderboard fetch in parallel
+            const [tasksRes, leaderboardRes] = await Promise.all([
+                (supabase.from('microtasks') as any)
+                    .select(`
+                        id, title, description, task_type, latitude, longitude, 
+                        address, related_report_id, start_time, end_time, 
+                        points, status, poll_options, created_by, created_at, 
+                        image_url,
+                        creator:profiles!created_by(full_name, email)
+                    `)
+                    .order('created_at', { ascending: false }),
+                (supabase.from('civic_points') as any)
+                    .select(`
+                        citizen_id, total_points, tasks_completed, level, badge, updated_at,
+                        citizen:profiles!citizen_id(full_name, email, avatar_url)
+                    `)
+                    .order('total_points', { ascending: false })
+                    .limit(10)
+            ]);
 
-        // Fallback: plain fetch without joins if the relational query fails
-        if (error) {
-            console.warn('[useMicrotasks] join fetch failed, falling back to plain fetch:', error.message);
-            const fallback = await (supabase.from('microtasks') as any)
-                .select('*')
-                .order('created_at', { ascending: false });
-            data = fallback.data;
-            error = fallback.error;
+            if (tasksRes.data) setTasks(tasksRes.data as Microtask[]);
+            if (leaderboardRes.data) setLeaderboard(leaderboardRes.data as CivicPoints[]);
+
+            if (tasksRes.error) console.error('[fetchTasks] ❌ tasks error:', tasksRes.error);
+            if (leaderboardRes.error) console.error('[fetchLeaderboard] ❌ leaderboard error:', leaderboardRes.error);
+
+        } catch (err) {
+            console.error('[fetchData] Critical Error:', err);
+        } finally {
+            if (showLoading) setLoading(false);
         }
-
-        if (error) {
-            console.error('[useMicrotasks] fetchTasks error:', error);
-        } else if (data) {
-            const enriched = (data as any[]).map((t: any) => ({
-                ...t,
-                response_count: t.responses?.length || 0,
-            }));
-            setTasks(enriched);
-        }
-        setLoading(false);
     }, []);
 
     const fetchTaskById = useCallback(async (id: string) => {
         const { data, error } = await (supabase.from('microtasks') as any)
             .select(`
-                *,
-                creator:profiles(full_name, email),
-                responses:microtask_responses(
+                id, title, description, task_type, latitude, longitude, address,
+                related_report_id, start_time, end_time, points, status, 
+                poll_options, created_by, created_at, image_url,
+                creator:profiles!created_by(full_name, email),
+                responses:microtask_responses!microtask_responses_microtask_id_fkey(
                     id, citizen_id, response_type, content, image_url,
                     submitted_at, approved, rejected, admin_note, points_awarded,
-                    citizen:profiles(full_name, email, avatar_url)
+                    citizen:profiles!citizen_id(full_name, email, avatar_url)
                 )
             `)
             .eq('id', id)
             .single();
 
         if (error) {
-            console.error('[useMicrotasks] fetchTaskById error:', error);
+            console.error('[fetchTaskById] ❌ error:', error);
             return null;
         }
-        return {
-            ...data,
-            response_count: data.responses?.length || 0,
-        } as Microtask;
+        return data as Microtask;
     }, []);
 
     const fetchLeaderboard = useCallback(async () => {
-        const { data } = await (supabase.from('civic_points') as any)
-            .select('*, citizen:profiles!citizen_id(full_name, email, avatar_url)')
+        const { data, error } = await (supabase.from('civic_points') as any)
+            .select(`
+                citizen_id, total_points, tasks_completed, level, badge,
+                citizen:profiles!citizen_id(full_name, email, avatar_url)
+            `)
             .order('total_points', { ascending: false })
-            .limit(20);
-        if (data) setLeaderboard(data);
+            .limit(10);
+        if (error) console.error('[fetchLeaderboard] ❌ error:', error);
+        else setLeaderboard(data as CivicPoints[]);
     }, []);
 
     useEffect(() => {
-        fetchTasks();
-        fetchLeaderboard();
+        fetchTasks(true);
 
-        const channel = supabase.channel('microtask_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'microtasks' }, fetchTasks)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'microtask_responses' }, () => {
-                fetchTasks();
-                fetchLeaderboard();
+        const channel = supabase.channel('microtasks_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'microtasks' }, () => {
+                fetchTasks(false); // Silent background refresh
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'civic_points' }, fetchLeaderboard)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'microtask_responses' }, () => {
+                fetchTasks(false); // Silent background refresh
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'civic_points' }, () => {
+                fetchLeaderboard(); // Leaderboard specific refresh
+            })
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
@@ -153,44 +158,59 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
 
     // --- Admin Actions ---
     const createTask = async (payload: Partial<Microtask>) => {
-        // Strip joined/computed fields — only send actual DB columns
         const {
             creator, related_report, responses, response_count,
             ...dbPayload
         } = payload as any;
 
-        // Ensure created_by is null (not '') if missing
         if (dbPayload.created_by === '') dbPayload.created_by = null;
 
         console.log('[createTask] 🚀 Starting deployment...', dbPayload);
 
-        // Pre-flight check: Verify table exists
-        const { error: tableCheck } = await (supabase.from('microtasks') as any).select('id').limit(1);
-        if (tableCheck && tableCheck.code === '42P01') {
-            const errorMsg = 'CRITICAL: The "microtasks" table does not exist in Supabase. Please run the SQL migration script.';
-            console.error(errorMsg);
-            throw new Error(errorMsg);
-        }
+        // OPTIMISTIC UPDATE: Add to UI immediately
+        const tempId = 'temp-' + Date.now();
+        const tempTask: Microtask = {
+            id: tempId,
+            ...dbPayload,
+            creator: { full_name: 'Deploying...', email: '' },
+            responses: [],
+            response_count: 0,
+            created_at: new Date().toISOString()
+        } as any;
 
-        const { error } = await (supabase.from('microtasks') as any)
-            .insert(dbPayload);
+        setTasks(prev => [tempTask, ...prev]);
+
+        const { data, error } = await (supabase.from('microtasks') as any)
+            .insert(dbPayload)
+            .select(`
+                *,
+                creator:profiles!created_by(full_name, email)
+            `)
+            .single();
 
         if (error) {
-            console.error('[createTask] ❌ Supabase error:', error);
-            const detailedError = error.details || error.message || JSON.stringify(error);
-            throw new Error(`Supabase Insert Failed: ${detailedError}`);
+            console.error('[createTask] ❌ Deployment error:', error);
+            setTasks(prev => prev.filter(t => t.id !== tempId)); // Rollback
+            throw new Error(`Deployment Failed: ${error.message}`);
         }
 
+        // Replace optimistic task with real record
+        setTasks(prev => prev.map(t => t.id === tempId ? { ...data, responses: [], response_count: 0 } : t));
         console.log('[createTask] ✅ Deployment successful!');
-        await fetchTasks();
+
+        // Notify citizens about the new mission (fire-and-forget, runs async)
+        notifyCitizensNewMicrotask(data.id, data.title).catch(console.error);
     };
 
     const closeTask = async (taskId: string) => {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'closed' } : t));
         const { error } = await (supabase.from('microtasks') as any)
             .update({ status: 'closed' })
             .eq('id', taskId);
-        if (error) throw error;
-        await fetchTasks();
+        if (error) {
+            fetchTasks();
+            throw error;
+        }
     };
 
     const approveResponse = async (responseId: string, points: number) => {
@@ -210,17 +230,38 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
         await fetchTasks();
     };
 
-    // --- Citizen Actions ---
     const submitResponse = async (taskId: string, citizenId: string, payload: Partial<MicrotaskResponse>) => {
-        // Strip citizen joined field
         const { citizen, ...dbPayload } = payload as any;
+
+        // Optimistic: Update percentages immediately
+        const tempResponse: MicrotaskResponse = {
+            id: 'temp-' + Date.now(),
+            microtask_id: taskId,
+            citizen_id: citizenId,
+            submitted_at: new Date().toISOString(),
+            approved: false,
+            rejected: false,
+            admin_note: null,
+            points_awarded: 0,
+            ...dbPayload
+        };
+
+        setTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                const updatedResponses = [...(t.responses || []), tempResponse];
+                return { ...t, responses: updatedResponses, response_count: updatedResponses.length };
+            }
+            return t;
+        }));
+
         const { error } = await (supabase.from('microtask_responses') as any).insert({
             microtask_id: taskId,
             citizen_id: citizenId,
             ...dbPayload,
         });
+
         if (error) {
-            console.error('[submitResponse] error:', error);
+            fetchTasks(); // Rollback
             throw error;
         }
         await fetchTasks();

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Report } from '../../types/reports';
+import { notifyUserMessage, createNotification } from '../../hooks/useNotifications';
 
 interface AdminWorkerThreadProps {
     report: Report;
@@ -78,6 +79,26 @@ export const AdminWorkerThread: React.FC<AdminWorkerThreadProps> = ({ report, ad
                 if (newMessage) {
                     setMessages(prev => [...prev, newMessage]);
                     scrollToBottom();
+
+                    // If a worker replied (not the admin), notify all admins
+                    if (payload.new.sender_role !== 'admin' && payload.new.sender_id !== adminId) {
+                        const { data: admins } = await (supabase.from('profiles') as any)
+                            .select('id').eq('role', 'admin');
+                        const senderName = newMessage.sender?.full_name || 'Worker';
+                        (admins || []).forEach((admin: { id: string }) => {
+                            if (admin.id !== adminId) {
+                                createNotification({
+                                    user_id: admin.id,
+                                    user_role: 'admin',
+                                    title: '💬 Worker Replied',
+                                    message: `${senderName} replied on report: "${report.title}"`,
+                                    type: 'message',
+                                    reference_id: report.id,
+                                    redirect_url: `/admin/reports/${report.id}`,
+                                }).catch(console.error);
+                            }
+                        });
+                    }
                 }
             })
             .subscribe();
@@ -107,6 +128,14 @@ export const AdminWorkerThread: React.FC<AdminWorkerThreadProps> = ({ report, ad
         if (error) {
             console.error("Error sending message:", error);
             setInputText(text);
+            return;
+        }
+
+        // Notify the assigned worker
+        const assignment = (report as any).assignments?.[0];
+        const workerId = assignment?.worker?.id ?? assignment?.worker_id;
+        if (workerId && workerId !== adminId) {
+            notifyUserMessage(workerId, 'worker', report.id, 'Admin').catch(console.error);
         }
     };
 

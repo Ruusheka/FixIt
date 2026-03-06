@@ -18,6 +18,7 @@ import { MinimalLayout } from '../components/MinimalLayout';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { format, differenceInHours } from 'date-fns';
+import { createNotification } from '../hooks/useNotifications';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -106,87 +107,64 @@ export const ReportDetailPage: React.FC = () => {
     const [showAfter, setShowAfter] = useState(false);
 
     // --- Data Fetching ---
-    const fetchData = async () => {
+    // --- Data Fetching ---
+    const fetchData = async (showLoading = true) => {
         if (!id) return;
+        if (showLoading) setLoading(true);
 
         try {
-            // 1. Fetch Report & Reporter
-            const { data: reportData, error: reportError } = await supabase
-                .from('issues')
-                .select('*, reporter:profiles!user_id(*)')
-                .eq('id', id)
-                .single();
+            // Parallel fetch of different tables
+            const [
+                { data: reportData, error: reportError },
+                { data: assignData },
+                { data: messageData },
+                { data: proofData }
+            ] = await Promise.all([
+                supabase.from('issues').select('id, title, description, category, status, severity, priority, risk_score, image_url, latitude, longitude, address, created_at, user_id, resolved_at, reporter:profiles!user_id(id, full_name, email, phone, role)').eq('id', id).single(),
+                supabase.from('report_assignments').select('id, worker_id, deadline, is_active, assigned_at, worker:profiles!worker_id(id, full_name, email, phone, role)').eq('report_id', id).eq('is_active', true).order('assigned_at', { ascending: false }).maybeSingle(),
+                supabase.from('report_messages').select('id, message_text, sender_role, sender_id, created_at, sender_profile:profiles!sender_id(id, full_name, avatar_url, role)').eq('report_id', id).eq('channel', 'citizen').order('created_at', { ascending: true }),
+                supabase.from('work_proofs').select('id, after_image_url, submitted_at, status').eq('report_id', id).order('submitted_at', { ascending: false }).maybeSingle()
+            ]);
 
             if (reportError) throw reportError;
-            setReport(reportData as any);
-
-            // 2. Fetch Active Assignment & Worker Details
-            const { data: assignData } = await supabase
-                .from('report_assignments')
-                .select('*, worker:profiles!worker_id(*)')
-                .eq('report_id', id)
-                .eq('is_active', true)
-                .order('assigned_at', { ascending: false })
-                .maybeSingle();
+            if (reportData) setReport(reportData as any);
+            if (messageData) setMessages(messageData as any);
+            if (proofData) setProof(proofData as any);
 
             if (assignData) {
-                // Fetch worker metrics
+                const rawAssignData = assignData as any;
+                // Fetch worker metrics separately if needed, but parallel is better
                 const { data: metricsData } = await supabase
                     .from('worker_metrics')
-                    .select('*')
-                    .eq('worker_id', assignData.worker_id)
+                    .select('worker_id, total_resolved')
+                    .eq('worker_id', rawAssignData.worker_id)
                     .maybeSingle();
 
-                setAssignment({ ...assignData, metrics: metricsData } as any);
+                setAssignment({ ...rawAssignData, metrics: metricsData } as any);
             } else {
                 setAssignment(null);
             }
 
-            // 3. Fetch Tactical Comms (using report_messages table)
-            const { data: messageData } = await supabase
-                .from('report_messages')
-                .select('*, sender_profile:profiles!sender_id(*)')
-                .eq('report_id', id)
-                .eq('channel', 'citizen')
-                .order('created_at', { ascending: true });
-
-            if (messageData) setMessages(messageData as any);
-
-            // 4. Fetch Work Proof (After Image)
-            const { data: proofData } = await supabase
-                .from('work_proofs')
-                .select('*')
-                .eq('report_id', id)
-                .order('submitted_at', { ascending: false })
-                .maybeSingle();
-
-            if (proofData) setProof(proofData as any);
-
         } catch (err) {
             console.error("Critical Error fetching report intel:", err);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchData();
+        fetchData(true);
 
-        // Realtime Subscriptions
-        const channels = [
-            supabase.channel(`report-${id}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'issues', filter: `id=eq.${id}` }, fetchData)
-                .subscribe(),
-            supabase.channel(`assignments-${id}`)
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'report_assignments', filter: `report_id=eq.${id}` }, fetchData)
-                .subscribe(),
-            supabase.channel(`messages-${id}`)
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_messages', filter: `report_id=eq.${id}` }, fetchData)
-                .subscribe()
-        ];
+        // Realtime Subscriptions with background tracking
+        const channel = supabase.channel(`report_intel_${id}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'issues', filter: `id=eq.${id}` }, () => fetchData(false))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'report_assignments', filter: `report_id=eq.${id}` }, () => fetchData(false))
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_messages', filter: `report_id=eq.${id}` }, () => fetchData(false))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'work_proofs', filter: `report_id=eq.${id}` }, () => fetchData(false))
+            .subscribe();
 
         return () => {
-            channels.forEach(ch => supabase.removeChannel(ch));
+            supabase.removeChannel(channel);
         };
     }, [id]);
 
@@ -203,15 +181,31 @@ export const ReportDetailPage: React.FC = () => {
         try {
             const { error } = await supabase
                 .from('report_messages')
-                .insert({
+                .insert([{
                     report_id: id,
                     sender_id: user.id,
                     sender_role: 'citizen',
                     message_text: newMessage.trim(),
                     channel: 'citizen'
-                });
+                }] as any);
             if (error) throw error;
             setNewMessage('');
+
+            // Notify all admins the citizen sent a message
+            const { data: admins } = await (supabase.from('profiles') as any)
+                .select('id').eq('role', 'admin');
+            const reportTitle = (report as any)?.title || 'a report';
+            (admins || []).forEach((admin: { id: string }) => {
+                createNotification({
+                    user_id: admin.id,
+                    user_role: 'admin',
+                    title: '💬 Citizen Messaged',
+                    message: `A citizen sent a message on: "${reportTitle}"`,
+                    type: 'message',
+                    reference_id: id,
+                    redirect_url: `/admin/reports/${id}`,
+                }).catch(console.error);
+            });
         } catch (err) {
             console.error("Comms failure:", err);
         } finally {
