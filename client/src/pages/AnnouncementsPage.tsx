@@ -79,15 +79,33 @@ export const AnnouncementsPage: React.FC = () => {
 
     const fetchBroadcasts = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('broadcasts')
-            .select('*, author:profiles!created_by(*)')
-            .order('created_at', { ascending: false });
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const baseUrl = import.meta.env.VITE_API_URL || 'https://fixit-server.onrender.com'; // Fallback to your likely production URL
 
-        if (error) {
-            console.error('[Announcements] Error fetching:', error);
-        } else if (data) {
-            processBroadcasts(data as Broadcast[]);
+            const response = await fetch(`${baseUrl}/api/broadcasts`, {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch from backend grid');
+            const data = await response.json();
+
+            if (data) {
+                processBroadcasts(data as Broadcast[]);
+            }
+        } catch (error) {
+            console.error('[Announcements] Network Error:', error);
+            // Fallback to supabase if backend fails (redundancy)
+            const { data, error: sbError } = await supabase
+                .from('broadcasts')
+                .select('*, author:profiles!created_by(*)')
+                .order('created_at', { ascending: false });
+
+            if (!sbError && data) {
+                processBroadcasts(data as Broadcast[]);
+            }
         }
         setLoading(false);
     };
