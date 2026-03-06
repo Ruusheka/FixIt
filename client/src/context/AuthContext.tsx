@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -61,18 +61,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(profileData);
     };
 
+    const isInitializing = useRef(true);
+
     useEffect(() => {
         let isMounted = true;
 
-        const syncAuth = async () => {
-            // Force a true starting state
+        const initializeAuth = async () => {
+            if (!isInitializing.current) return;
             setLoading(true);
 
             try {
-                // 1. Get current session
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-                if (sessionError) throw sessionError;
+                // 1. Recover Session from Storage (Session hydration)
+                const { data: { session } } = await supabase.auth.getSession();
 
                 if (session?.user && isMounted) {
                     setUser(session.user);
@@ -83,38 +83,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setProfile(null);
                 }
             } catch (err) {
-                console.error('[Auth Init] Failure:', err);
+                console.error('[Auth Init] Critical Error:', err);
                 if (isMounted) {
                     setUser(null);
                     setProfile(null);
                 }
             } finally {
-                // 2. Short delay to ensure React state has propogated 
-                // and to avoid flash of login on slow connections
-                setTimeout(() => {
-                    if (isMounted) setLoading(false);
-                }, 400);
+                // Done initializing
+                if (isMounted) {
+                    setTimeout(() => {
+                        if (isMounted) {
+                            isInitializing.current = false;
+                            setLoading(false);
+                        }
+                    }, 50); // Atomic bridge delay
+                }
             }
         };
 
-        syncAuth();
+        initializeAuth();
 
+        // 2. Continuous Monitoring (Login/Logout events)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Auth Event] ${event}`);
             if (!isMounted) return;
 
-            if (session?.user) {
-                setUser(session.user);
-                const profileData = await fetchProfile(session.user.id);
-                if (isMounted) setProfile(profileData);
-            } else {
-                setUser(null);
-                setProfile(null);
-            }
+            // Only act if not in initial boot phase (init already handled this)
+            if (!isInitializing.current) {
+                if (session?.user) {
+                    setUser(session.user);
+                    const profileData = await fetchProfile(session.user.id);
+                    if (isMounted) setProfile(profileData);
+                } else {
+                    setUser(null);
+                    setProfile(null);
+                }
 
-            // If the state change happened after init, make sure we aren't loading
-            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-                setLoading(false);
+                if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+                    setLoading(false);
+                }
             }
         });
 
