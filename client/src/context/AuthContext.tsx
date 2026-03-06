@@ -31,10 +31,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        console.log('AuthProvider mounted, initializing Supabase auth...');
-    }, []);
+    const [isInitialized, setIsInitialized] = useState(false);
+    const [profileLoading, setProfileLoading] = useState(false);
 
     const fetchProfile = async (userId: string) => {
         const { data, error } = await supabase
@@ -44,12 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
 
         if (error) {
-            console.log('Supabase Error Object:', error); // DEBUG LOG
-            if (error.code === 'PGRST116' || error.message?.includes('profiles" does not exist')) {
-                console.warn('Profiles table not found. Please check Supabase Table Editor.');
-            } else {
-                console.error('Error fetching profile:', error);
-            }
+            console.error('Error fetching profile:', error);
             return null;
         }
         return data as Profile;
@@ -61,67 +54,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(profileData);
     };
 
-    const isInitializing = useRef(true);
-
+    // 1. Initial hydration on mount
     useEffect(() => {
         let isMounted = true;
-
-        const initializeAuth = async () => {
-            if (!isInitializing.current) return;
+        const syncAuth = async () => {
             setLoading(true);
-
             try {
-                // 1. Recover Session from Storage (Session hydration)
                 const { data: { session } } = await supabase.auth.getSession();
-
                 if (session?.user && isMounted) {
                     setUser(session.user);
+                    setProfileLoading(true);
                     const profileData = await fetchProfile(session.user.id);
                     if (isMounted) setProfile(profileData);
-                } else if (isMounted) {
-                    setUser(null);
-                    setProfile(null);
+                    setProfileLoading(false);
                 }
             } catch (err) {
-                console.error('[Auth Init] Critical Error:', err);
-                if (isMounted) {
-                    setUser(null);
-                    setProfile(null);
-                }
+                console.error('[Auth Init] Recovery Failed:', err);
             } finally {
-                // Done initializing
                 if (isMounted) {
-                    setTimeout(() => {
-                        if (isMounted) {
-                            isInitializing.current = false;
-                            setLoading(false);
-                        }
-                    }, 50); // Atomic bridge delay
+                    setIsInitialized(true);
+                    setLoading(false);
                 }
             }
         };
+        syncAuth();
+    }, []);
 
-        initializeAuth();
-
-        // 2. Continuous Monitoring (Login/Logout events)
+    // 2. Global state change monitoring
+    useEffect(() => {
+        let isMounted = true;
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Auth Event] ${event}`);
             if (!isMounted) return;
 
-            // Only act if not in initial boot phase (init already handled this)
-            if (!isInitializing.current) {
-                if (session?.user) {
-                    setUser(session.user);
-                    const profileData = await fetchProfile(session.user.id);
-                    if (isMounted) setProfile(profileData);
-                } else {
-                    setUser(null);
-                    setProfile(null);
-                }
-
-                if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-                    setLoading(false);
-                }
+            if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setProfile(null);
+                setLoading(false);
+                setProfileLoading(false);
+            } else if (session?.user) {
+                setUser(session.user);
+                setProfileLoading(true);
+                const profileData = await fetchProfile(session.user.id);
+                if (isMounted) setProfile(profileData);
+                setProfileLoading(false);
+                setLoading(false);
             }
         });
 
@@ -142,7 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 },
             },
         });
-
         if (error) throw error;
     };
 
@@ -179,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const value = {
         user,
         profile,
-        loading,
+        loading: (!isInitialized || loading || profileLoading),
         signUp,
         signIn,
         signOut,
