@@ -20,7 +20,9 @@ export const useOperations = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session?.access_token) return;
 
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/operations/data`, {
+            const baseUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
+
+            const response = await fetch(`${baseUrl}/api/operations/data`, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
                 }
