@@ -22,8 +22,23 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children
         );
     }
 
-    if (!user || !profile) {
+    if (!user) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (!profile) {
+        // Logged in but profile fetch failed or still missing record
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-brand-primary p-6">
+                <div className="minimal-card max-w-md w-full p-10 text-center">
+                    <ShieldAlert className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold mb-2">Profile Missing</h2>
+                    <p className="text-brand-secondary/60 mb-6">We could not retrieve your user profile record. Contact support if this persists.</p>
+                    <button onClick={() => window.location.reload()} className="btn-primary w-full">Retry Connection</button>
+                    <Link to="/login" className="block mt-4 text-xs font-bold uppercase tracking-widest opacity-40 hover:opacity-100">Sign Out & Try Again</Link>
+                </div>
+            </div>
+        );
     }
 
     if (!allowedRoles.includes(profile.role)) {

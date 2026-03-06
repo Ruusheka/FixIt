@@ -66,7 +66,8 @@ const AnimatedRoutes = () => {
   }
 
   const getDashboardPath = () => {
-    if (!profile) return '/login';
+    if (!user) return '/login';
+    if (!profile) return '/citizen'; // Minimal fallback
     switch (profile.role) {
       case 'admin': return '/admin';
       case 'worker': return '/worker/dashboard';

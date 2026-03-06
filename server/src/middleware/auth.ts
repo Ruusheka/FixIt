@@ -3,7 +3,7 @@ import { supabase } from '../config/supabase';
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(/\s+/)[1];
 
         if (!token) {
             return res.status(401).json({ error: 'Unauthorized: No token provided' });
@@ -30,7 +30,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
         console.log('--- Auth Middleware Check ---');
         console.log('Authorization Header:', authHeader ? 'Present' : 'MISSING');
 
-        const token = authHeader?.split(' ')[1];
+        const token = authHeader?.split(/\s+/)[1];
 
         if (!token) {
             console.log('No token found in Authorization header.');
