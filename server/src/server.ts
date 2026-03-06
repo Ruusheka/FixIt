@@ -54,7 +54,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // 🚀 [Critical Fix] Fallback to index.html for all non-API routes (SPA Routing)
-app.get('*', (req, res) => {
+// Express 5 requires (.*) for unnamed wildcards
+app.get('(.*)', (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
 });
 
