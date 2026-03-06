@@ -63,9 +63,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         let isMounted = true;
-        setLoading(true);
 
-        // Listen for auth changes and handle initial session
+        const initializeAuth = async () => {
+            setLoading(true);
+            try {
+                // 1. Check initial session immediately for fast reload hydration
+                const { data: { session } } = await supabase.auth.getSession();
+                console.log('[Auth] Initializing Session:', session?.user?.email || 'None');
+
+                if (session?.user && isMounted) {
+                    setUser(session.user);
+                    const profileData = await fetchProfile(session.user.id);
+                    if (isMounted) setProfile(profileData);
+                }
+            } catch (err) {
+                console.error('[Auth] Initialization error:', err);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        initializeAuth();
+
+        // 2. Listen for subsequent auth state changes (login, logout, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[Auth] Event: ${event}`, session ? `User: ${session.user.email}` : 'No Session');
 
@@ -73,18 +93,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (session?.user) {
                 setUser(session.user);
-                // Important: Ensure profile is loaded (if not already match)
-                // before finishing loading wait, to prevent redirect loop.
                 const profileData = await fetchProfile(session.user.id);
-                if (isMounted) {
-                    setProfile(profileData);
-                    setLoading(false);
-                }
+                if (isMounted) setProfile(profileData);
             } else {
                 setUser(null);
                 setProfile(null);
-                setLoading(false);
             }
+            // Ensure any manual event also finishes the loading lock
+            setLoading(false);
         });
 
         return () => {
