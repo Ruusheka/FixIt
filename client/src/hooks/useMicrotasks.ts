@@ -78,7 +78,8 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
                         address, related_report_id, start_time, end_time, 
                         points, status, poll_options, created_by, created_at, 
                         image_url,
-                        creator:profiles!created_by(full_name, email)
+                        creator:profiles!created_by(full_name, email),
+                        responses:microtask_responses(id, approved, rejected, citizen_id)
                     `)
                     .order('created_at', { ascending: false }),
                 (supabase.from('civic_points') as any)
@@ -90,7 +91,13 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
                     .limit(10)
             ]);
 
-            if (tasksRes.data) setTasks(tasksRes.data as Microtask[]);
+            if (tasksRes.data) {
+                const tasksWithCounts = (tasksRes.data as any[]).map(t => ({
+                    ...t,
+                    response_count: t.responses?.length || 0
+                }));
+                setTasks(tasksWithCounts as Microtask[]);
+            }
             if (leaderboardRes.data) setLeaderboard(leaderboardRes.data as CivicPoints[]);
 
             if (tasksRes.error) console.error('[fetchTasks] ❌ tasks error:', tasksRes.error);

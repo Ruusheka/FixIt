@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -13,7 +13,7 @@ import { adminNavItems as centralNavItems } from '../constants/adminNav';
 import { useMicrotasks, Microtask } from '../hooks/useMicrotasks';
 import { useAuth } from '../hooks/useAuth';
 import { formatDistanceToNow, isPast } from 'date-fns';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -252,6 +252,21 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
     const [location, setLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mapCenter, setMapCenter] = useState<[number, number]>([12.9716, 77.5946]);
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    setMapCenter([latitude, longitude]);
+                    setLocation({ lat: latitude, lng: longitude, address: 'Current Location' });
+                },
+                (err) => console.warn("Admin GPS failed:", err),
+                { timeout: 5000 }
+            );
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -300,11 +315,12 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
 
                 {/* Left: Map Pinning */}
                 <div className="w-full md:w-1/2 h-[350px] md:h-auto relative bg-brand-secondary/5 shrink-0">
-                    <MapContainer center={[12.9716, 77.5946]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                    <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                         <MapEvents onLocationSelect={setLocation} />
                         {location && <Marker position={[location.lat, location.lng]} />}
                     </MapContainer>
+                    <ChangeView center={mapCenter} />
                     <div className="absolute top-4 left-4 right-4 z-[1000] pointer-events-none">
                         <div className="bg-brand-secondary text-white p-4 rounded-2xl shadow-2xl backdrop-blur-md bg-brand-secondary/90 border border-white/10">
                             <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
@@ -468,5 +484,13 @@ const MapEvents: React.FC<{ onLocationSelect: (loc: { lat: number; lng: number; 
             }
         }
     });
+    return null;
+};
+
+const ChangeView: React.FC<{ center: [number, number] }> = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        map.setView(center, map.getZoom());
+    }, [center, map]);
     return null;
 };

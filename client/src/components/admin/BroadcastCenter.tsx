@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Send, Radio, AlertTriangle, Megaphone,
@@ -9,7 +9,7 @@ import {
 import { useOperations } from '../../hooks/useOperations';
 import { Broadcast, Department } from '../../types/reports';
 import { format } from 'date-fns';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 type TabType = 'create' | 'active' | 'scheduled' | 'expired' | 'analytics' | 'history';
@@ -31,6 +31,24 @@ export const BroadcastCenter: React.FC = () => {
     const [locationLng, setLocationLng] = useState<number | null>(null);
     const [showMap, setShowMap] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mapCenter, setMapCenter] = useState<[number, number]>([12.9716, 77.5946]);
+
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    setMapCenter([latitude, longitude]);
+                    if (!locationLat && !locationLng) {
+                        setLocationLat(latitude);
+                        setLocationLng(longitude);
+                    }
+                },
+                (err) => console.warn("Broadcast GPS failed:", err),
+                { timeout: 5000 }
+            );
+        }
+    }, [locationLat, locationLng]);
 
     const MapClickHandler = () => {
         useMapEvents({
@@ -240,7 +258,7 @@ export const BroadcastCenter: React.FC = () => {
                                                             </div>
                                                             <div className="h-[300px] w-full rounded-2xl overflow-hidden border border-brand-secondary/10 bg-brand-primary/5 relative z-0">
                                                                 <MapContainer
-                                                                    center={[locationLat || 12.9716, locationLng || 80.0435]} // Default roughly to Chennai or selected
+                                                                    center={mapCenter} // Use mapCenter state
                                                                     zoom={10}
                                                                     style={{ height: '100%', width: '100%', zIndex: 1 }}
                                                                 >
@@ -249,6 +267,7 @@ export const BroadcastCenter: React.FC = () => {
                                                                         attribution="&copy; OpenStreetMap contributors"
                                                                     />
                                                                     <MapClickHandler />
+                                                                    <ChangeView center={mapCenter} />
                                                                     {locationLat && locationLng && (
                                                                         <Marker position={[locationLat, locationLng]} />
                                                                     )}
@@ -479,4 +498,12 @@ const BroadcastCard: React.FC<{ broadcast: Broadcast; onDelete: () => void }> = 
             </div>
         </motion.div>
     );
+};
+
+const ChangeView: React.FC<{ center: [number, number] }> = ({ center }) => {
+    const map = useMap();
+    useEffect(() => {
+        map.setView(center, map.getZoom());
+    }, [center, map]);
+    return null;
 };

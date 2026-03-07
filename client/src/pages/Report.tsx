@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -61,6 +61,21 @@ export const ReportIssue: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
+    // Fetch location on mount
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    setLatitude(pos.coords.latitude);
+                    setLongitude(pos.coords.longitude);
+                    setLocationCaptured(true);
+                },
+                (err) => console.warn("Initial GPS failed:", err),
+                { timeout: 10000, enableHighAccuracy: true }
+            );
+        }
+    }, []);
+
     const handleImageChange = async (file: File) => {
         if (file) {
             setLoading(true);
@@ -68,7 +83,6 @@ export const ReportIssue: React.FC = () => {
             setAiError(null);
             setAiAnalysis(null);
             setAiConfirmed(false);
-            setLocationCaptured(false);
 
             try {
                 // 🚀 Compress image first to reduce network payload
@@ -76,15 +90,15 @@ export const ReportIssue: React.FC = () => {
                 setImage(compressedFile);
                 setPreview(URL.createObjectURL(compressedFile));
 
-                // Fetch initial GPS
-                if ("geolocation" in navigator) {
+                // Re-verify GPS if not already captured
+                if (!locationCaptured && "geolocation" in navigator) {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
                             setLatitude(pos.coords.latitude);
                             setLongitude(pos.coords.longitude);
                             setLocationCaptured(true);
                         },
-                        (err) => console.warn("Initial GPS failed:", err),
+                        (err) => console.warn("GPS refresh failed:", err),
                         { timeout: 5000 }
                     );
                 }
