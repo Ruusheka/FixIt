@@ -109,8 +109,8 @@ export const AdminDashboard: React.FC = () => {
                 { data: load = [] }
             ] = (await Promise.all([
                 supabase.from('issues').select('id, created_at, resolved_at, risk_score, is_escalated, status, title, latitude, longitude, address, priority, image_url'),
-                supabase.from('workers').select('id, full_name, role, status, avatar_url, phone, active_task_count'),
-                supabase.from('escalations').select('id, report_id, reason, status, created_at, report:issues(title, status)').order('created_at', { ascending: false }).limit(5),
+                supabase.from('workers').select('id, status, phone, profiles(full_name, role, avatar_url)'),
+                supabase.from('escalations').select('id, report_id, reason, resolved, created_at, report:issues(title, status)').order('created_at', { ascending: false }).limit(5),
                 supabase.from('admin_activity_logs').select('id, admin_id, action, target_type, target_id, created_at, admin:profiles(full_name)').order('created_at', { ascending: false }).limit(5),
                 supabase.from('report_assignments').select('worker_id, worker:profiles!report_assignments_worker_id_fkey(full_name)').eq('is_active', true)
             ])) as any[];

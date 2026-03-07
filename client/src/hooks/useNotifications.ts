@@ -27,7 +27,10 @@ export const useNotifications = (userId: string | null | undefined) => {
         setLoading(true);
 
         const { data, error } = await (supabase.from('notifications') as any)
-            .select('*')
+            .select(`
+                id, user_id, title, message, type, is_read, created_at,
+                redirect_url:link
+            `)
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(20);
@@ -88,7 +91,10 @@ export const useNotifications = (userId: string | null | undefined) => {
                 table: 'notifications',
                 filter: `user_id=eq.${userId}`
             }, (payload: any) => {
-                const newNotif = payload.new as Notification;
+                const newNotif = {
+                    ...payload.new,
+                    redirect_url: payload.new.link
+                } as Notification;
                 setNotifications(prev => [newNotif, ...prev].slice(0, 20));
                 setUnreadCount(prev => prev + 1);
                 showToast(newNotif);
@@ -99,7 +105,10 @@ export const useNotifications = (userId: string | null | undefined) => {
                 table: 'notifications',
                 filter: `user_id=eq.${userId}`
             }, (payload: any) => {
-                const updated = payload.new as Notification;
+                const updated = {
+                    ...payload.new,
+                    redirect_url: payload.new.link
+                } as Notification;
                 setNotifications(prev =>
                     prev.map(n => n.id === updated.id ? updated : n)
                 );
@@ -141,7 +150,11 @@ export const createNotification = async (payload: {
     redirect_url?: string;
 }) => {
     const { error } = await (supabase.from('notifications') as any).insert({
-        ...payload,
+        user_id: payload.user_id,
+        title: payload.title,
+        message: payload.message,
+        type: payload.type,
+        link: payload.redirect_url, // Map redirect_url to link column
         is_read: false,
     });
     if (error) console.error('[createNotification] error:', error);
@@ -158,12 +171,10 @@ export const notifyAdminsNewReport = async (reportId: string, reportTitle: strin
 
         const notifications = admins.map((admin: { id: string }) => ({
             user_id: admin.id,
-            user_role: 'admin' as const,
             title: '📄 New Report Submitted',
             message: `A citizen submitted: "${reportTitle}"`,
             type: 'new_report' as const,
-            reference_id: reportId,
-            redirect_url: `/admin/reports/${reportId}`,
+            link: `/admin/reports/${reportId}`, // Use link instead of redirect_url
             is_read: false,
         }));
 
@@ -197,12 +208,10 @@ export const notifyAdminProofUploaded = async (reportId: string, workerName: str
 
         const notifications = admins.map((admin: { id: string }) => ({
             user_id: admin.id,
-            user_role: 'admin' as const,
             title: '📸 Proof Uploaded',
             message: `${workerName} uploaded resolution proof. Review required.`,
             type: 'proof' as const,
-            reference_id: reportId,
-            redirect_url: `/admin/reports/${reportId}`,
+            link: `/admin/reports/${reportId}`, // Use link instead of redirect_url
             is_read: false,
         }));
 
@@ -236,12 +245,10 @@ export const notifyCitizensNewMicrotask = async (taskId: string, taskTitle: stri
 
         const notifications = citizens.map((c: { id: string }) => ({
             user_id: c.id,
-            user_role: 'citizen' as const,
             title: '🎯 New Mission Available',
             message: `"${taskTitle}" — Earn civic points by completing this mission!`,
             type: 'microtask' as const,
-            reference_id: taskId,
-            redirect_url: `/citizen/micro-tasks/${taskId}`,
+            link: `/citizen/micro-tasks/${taskId}`, // Use link instead of redirect_url
             is_read: false,
         }));
 
@@ -266,12 +273,10 @@ export const notifyAdminMicrotaskResponse = async (taskId: string, taskTitle: st
 
         const notifications = admins.map((admin: { id: string }) => ({
             user_id: admin.id,
-            user_role: 'admin' as const,
             title: '📋 Mission Response Received',
             message: `${citizenName} submitted a response for "${taskTitle}"`,
             type: 'response' as const,
-            reference_id: taskId,
-            redirect_url: `/admin/micro-tasks/${taskId}`,
+            link: `/admin/micro-tasks/${taskId}`, // Use link instead of redirect_url
             is_read: false,
         }));
 

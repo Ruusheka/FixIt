@@ -5,6 +5,7 @@ const URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const socket = io(URL, {
     autoConnect: false,
     reconnection: true,
+    transports: ['websocket'], // Bypass Render polling issues
 });
 
 export const connectSocket = () => {

@@ -97,7 +97,7 @@ export const useOperations = () => {
         await (supabase.from('report_activity_logs') as any).insert({
             report_id: reportId,
             actor_id: user.id,
-            action_type: actionType,
+            action: actionType, // Migration uses 'action' column
             details: details
         });
     };
