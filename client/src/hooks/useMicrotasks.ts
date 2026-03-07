@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../services/supabase';
-import { notifyCitizensNewMicrotask } from './useNotifications';
+import { notifyCitizensNewMicrotask, notifyCitizenMicrotaskVerified, notifyCitizenMicrotaskRejected } from './useNotifications';
 
 export interface Microtask {
     id: string;
@@ -79,7 +79,7 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
                         points, status, poll_options, created_by, created_at, 
                         image_url,
                         creator:profiles!created_by(full_name, email),
-                        responses:microtask_responses(id, approved, rejected, citizen_id)
+                        responses:microtask_responses!microtask_responses_microtask_id_fkey(id, approved, rejected, citizen_id)
                     `)
                     .order('created_at', { ascending: false }),
                 (supabase.from('civic_points') as any)
@@ -221,19 +221,43 @@ export const useMicrotasks = (role?: 'admin' | 'citizen', citizenId?: string) =>
     };
 
     const approveResponse = async (responseId: string, points: number) => {
+        // Fetch data first for notification
+        const { data: resp } = await (supabase.from('microtask_responses') as any)
+            .select('citizen_id, microtask_id, microtasks!microtask_id(title)')
+            .eq('id', responseId)
+            .single();
+
         const { error } = await (supabase.from('microtask_responses') as any)
             .update({ approved: true, rejected: false, points_awarded: points })
             .eq('id', responseId);
+
         if (error) throw error;
+
+        if (resp) {
+            await notifyCitizenMicrotaskVerified(resp.citizen_id, resp.microtask_id, resp.microtasks.title, points);
+        }
+
         await fetchTasks();
         await fetchLeaderboard();
     };
 
     const rejectResponse = async (responseId: string, note: string) => {
+        // Fetch data first for notification
+        const { data: resp } = await (supabase.from('microtask_responses') as any)
+            .select('citizen_id, microtask_id, microtasks!microtask_id(title)')
+            .eq('id', responseId)
+            .single();
+
         const { error } = await (supabase.from('microtask_responses') as any)
             .update({ rejected: true, approved: false, admin_note: note })
             .eq('id', responseId);
+
         if (error) throw error;
+
+        if (resp) {
+            await notifyCitizenMicrotaskRejected(resp.citizen_id, resp.microtask_id, resp.microtasks.title, note);
+        }
+
         await fetchTasks();
     };
 

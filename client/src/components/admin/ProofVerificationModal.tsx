@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, X, AlertCircle, CheckCircle2, RotateCcw, Star, User, Calendar } from 'lucide-react';
 import { ResolutionProof } from '../../types/reports';
 import { supabase } from '../../services/supabase';
+import { notifyCitizenStatusUpdate } from '../../hooks/useNotifications';
 
 
 interface VerificationModalProps {
@@ -96,13 +97,7 @@ export const ProofVerificationModal: React.FC<VerificationModalProps> = ({ repor
                         .single();
 
                     if ((issueData as any)?.user_id) {
-                        await (supabase.from('notifications') as any).insert({
-                            user_id: (issueData as any).user_id,
-                            title: '✔ Issue Resolved',
-                            message: `Your report "${(issueData as any).title}" has been verified and resolved!`,
-                            type: 'resolution',
-                            link: `/citizen/reports/${reportId}`,
-                        });
+                        await notifyCitizenStatusUpdate((issueData as any).user_id, reportId, (issueData as any).title, 'RESOLVED');
                     }
 
                     // Notify worker

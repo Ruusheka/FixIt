@@ -307,3 +307,55 @@ export const notifyUserMessage = async (
         redirect_url: redirectBase,
     });
 };
+
+// Notify citizen when their microtask response is verified/approved
+export const notifyCitizenMicrotaskVerified = async (citizenId: string, taskId: string, taskTitle: string, points: number) => {
+    await createNotification({
+        user_id: citizenId,
+        user_role: 'citizen',
+        title: '🎯 Mission Verified!',
+        message: `Your response for "${taskTitle}" has been approved. You earned ${points} points!`,
+        type: 'microtask',
+        reference_id: taskId,
+        redirect_url: `/citizen/micro-tasks/${taskId}`,
+    });
+};
+
+// Notify citizen when their microtask response is rejected
+export const notifyCitizenMicrotaskRejected = async (citizenId: string, taskId: string, taskTitle: string, reason: string) => {
+    await createNotification({
+        user_id: citizenId,
+        user_role: 'citizen',
+        title: '⚠️ Mission Clarification Needed',
+        message: `Correction required for "${taskTitle}": ${reason}`,
+        type: 'microtask',
+        reference_id: taskId,
+        redirect_url: `/citizen/micro-tasks/${taskId}`,
+    });
+};
+
+// Notify citizen when a worker is assigned to their report
+export const notifyCitizenAssigned = async (citizenId: string, reportId: string, reportTitle: string, workerName: string) => {
+    await createNotification({
+        user_id: citizenId,
+        user_role: 'citizen',
+        title: '🛠 Worker Assigned',
+        message: `A worker (${workerName}) has been assigned to resolve "${reportTitle}".`,
+        type: 'assignment',
+        reference_id: reportId,
+        redirect_url: `/citizen/reports/${reportId}`,
+    });
+};
+
+// Notify citizen of any status update on their report
+export const notifyCitizenStatusUpdate = async (citizenId: string, reportId: string, reportTitle: string, newStatus: string) => {
+    await createNotification({
+        user_id: citizenId,
+        user_role: 'citizen',
+        title: '📈 Report Update',
+        message: `Your report "${reportTitle}" is now: ${newStatus.replace(/_/g, ' ').toUpperCase()}`,
+        type: 'report_update',
+        reference_id: reportId,
+        redirect_url: `/citizen/reports/${reportId}`,
+    });
+};

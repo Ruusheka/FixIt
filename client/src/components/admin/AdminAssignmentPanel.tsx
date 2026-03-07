@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { Report, Profile, ReportPriority } from '../../types/reports';
-import { notifyWorkerAssigned } from '../../hooks/useNotifications';
+import { notifyWorkerAssigned, notifyCitizenAssigned } from '../../hooks/useNotifications';
 
 interface AdminAssignmentPanelProps {
     report: Report;
@@ -138,8 +138,13 @@ export const AdminAssignmentPanel: React.FC<AdminAssignmentPanelProps> = ({ repo
 
             if (activityError) console.error("Activity Log Error (Non-blocking):", activityError);
 
-            // 5. Notify the assigned worker via the Notification System
+            // 5. Notify the assigned worker and citizen via the Notification System
             await notifyWorkerAssigned(selectedWorkerId, report.id, report.title);
+
+            const workerName = workers.find(w => w.id === selectedWorkerId)?.full_name || 'A field operative';
+            if (report.user_id) {
+                await notifyCitizenAssigned(report.user_id, report.id, report.title, workerName);
+            }
 
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);

@@ -169,6 +169,23 @@ export const useOperations = () => {
                 target_id: responseData.id
             }] as any);
 
+            // Notify relevant users (Strategic Broadcast)
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('role', payload.audience === 'Both' ? 'citizen' : payload.audience === 'Citizen' ? 'citizen' : 'worker');
+
+            if (profiles && profiles.length > 0) {
+                const notifications = (profiles as any[]).map(p => ({
+                    user_id: p.id,
+                    title: `📢 ${payload.title}`,
+                    message: payload.message?.slice(0, 100) + (payload.message && payload.message.length > 100 ? '...' : ''),
+                    type: 'message',
+                    link: payload.audience === 'Worker' ? '/worker/announcements' : '/citizen/announcements',
+                }));
+                await (supabase.from('notifications') as any).insert(notifications);
+            }
+
             // 🚀 Optimization: Update local state immediately
             setBroadcasts(prev => {
                 if (prev.some(b => b.id === responseData.id)) return prev;
