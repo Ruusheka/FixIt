@@ -83,18 +83,22 @@ export const useNotifications = (userId: string | null | undefined) => {
         if (!userId) return;
         fetchNotifications();
 
+        // One channel for all notification changes
         const channel = supabase
-            .channel(`notifications:${userId}`)
+            .channel(`notifications-realtime-${userId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'notifications',
                 filter: `user_id=eq.${userId}`
             }, (payload: any) => {
+                if (!payload?.new) return;
+
                 const newNotif = {
                     ...payload.new,
-                    redirect_url: payload.new.link
+                    redirect_url: payload.new.link || payload.new.redirect_url
                 } as Notification;
+
                 setNotifications(prev => [newNotif, ...prev].slice(0, 20));
                 setUnreadCount(prev => prev + 1);
                 showToast(newNotif);
@@ -105,19 +109,23 @@ export const useNotifications = (userId: string | null | undefined) => {
                 table: 'notifications',
                 filter: `user_id=eq.${userId}`
             }, (payload: any) => {
+                if (!payload?.new) return;
+
+                // Map link to redirect_url for internal state consistency
                 const updated = {
                     ...payload.new,
-                    redirect_url: payload.new.link
+                    redirect_url: payload.new.link || payload.new.redirect_url
                 } as Notification;
+
                 setNotifications(prev =>
-                    prev.map(n => n.id === updated.id ? updated : n)
+                    prev.map(n => n.id === updated.id ? { ...n, ...updated } : n)
                 );
-                setUnreadCount(prev => {
-                    // recalculate based on current state
-                    return Math.max(0, prev);
-                });
             })
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('📡 [Link] Notifications Realtime Synced');
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);

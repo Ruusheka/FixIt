@@ -62,7 +62,8 @@ export const WorkDetail: React.FC = () => {
                 schema: 'public',
                 table: 'report_messages',
                 filter: `report_id=eq.${id}`
-            }, (payload) => {
+            }, (payload: any) => {
+                if (!payload?.new) return;
                 if (payload.new.channel !== 'worker') return;
                 setMessages(prev => [...prev, payload.new]);
             })

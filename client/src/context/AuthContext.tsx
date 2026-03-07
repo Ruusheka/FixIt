@@ -78,12 +78,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let isMounted = true;
 
         const initializeAuthSystem = async () => {
-            // STEP 1: Recover Session
             try {
+                // 1. Recover Session from Storage
                 const { data: { session } } = await supabase.auth.getSession();
 
-                if (session?.user && isMounted) {
-                    // STEP 2: Pre-fetch profile before revealing the app
+                if (!isMounted) return;
+
+                if (session?.user) {
+                    // 2. Fetch Profile before resolving 'loading'
                     const profileData = await fetchProfile(session.user.id);
                     if (isMounted) {
                         setState({
@@ -94,7 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isProfileSyncing: false
                         });
                     }
-                } else if (isMounted) {
+                } else {
+                    // 3. No session, resolve immediately
                     setState({
                         user: null,
                         profile: null,
@@ -113,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         initializeAuthSystem();
 
-        // 3. Subscription Management for Login/Logout/Refresh
+        // 3. Subscription Management
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log(`[🔐 Security Event] ${event}`);
             if (!isMounted) return;
@@ -127,13 +130,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     isProfileSyncing: false
                 });
             } else if (session?.user) {
-                // If it's a new or refreshed login, ensure profile is synced before final render
-                setState(prev => ({ ...prev, isProfileSyncing: true, user: session.user }));
-                const profileData = await fetchProfile(session.user.id);
+                // Prevent duplicate syncing if we already have the profile for this user
+                setState(prev => {
+                    if (prev.user?.id === session.user.id && prev.profile) {
+                        return { ...prev, user: session.user, isLoading: false, isInitialAuthDone: true };
+                    }
+                    return { ...prev, isProfileSyncing: true, user: session.user };
+                });
+
+                // Fetch if needed
+                const currentProfile = await fetchProfile(session.user.id);
                 if (isMounted) {
                     setState({
                         user: session.user,
-                        profile: profileData,
+                        profile: currentProfile,
                         isLoading: false,
                         isInitialAuthDone: true,
                         isProfileSyncing: false

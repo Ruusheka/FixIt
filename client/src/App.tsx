@@ -46,20 +46,27 @@ const AnimatedRoutes = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (user) {
+    let active = true;
+    if (user && active) {
       connectSocket();
     } else {
       disconnectSocket();
     }
-    return () => disconnectSocket();
-  }, [user]);
+    return () => {
+      active = false;
+      disconnectSocket();
+    };
+  }, [user?.id]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-brand-primary">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-brand-secondary/10 border-t-brand-secondary rounded-full animate-spin" />
-          <div className="text-sm font-bold tracking-widest text-brand-secondary/40 uppercase">Initialising FixIt</div>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-brand-secondary/5 rounded-full" />
+            <div className="absolute inset-0 border-4 border-transparent border-t-brand-secondary rounded-full animate-spin" />
+          </div>
+          <div className="text-[10px] font-black tracking-[0.4em] text-brand-secondary/40 uppercase">Initialising FixIt Node</div>
         </div>
       </div>
     );

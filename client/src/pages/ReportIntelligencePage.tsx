@@ -69,20 +69,20 @@ export const ReportIntelligencePage: React.FC = () => {
             const messageSub = supabase
                 .channel(`chat-${id}`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_messages', filter: `report_id=eq.${id}` },
-                    async (payload) => {
+                    (payload: any) => {
+                        if (!payload?.new) return;
                         if (payload.new.channel === 'worker') return;
-                        const { data: newMessage } = await (supabase.from('report_messages') as any)
-                            .select('*, profiles:sender_id(full_name, role)')
-                            .eq('id', payload.new.id)
-                            .single();
-                        if (newMessage) setMessages(prev => [...prev, newMessage]);
+                        fetchReportDetails(); // Refresh to get the profile data too
                     })
                 .subscribe();
 
             const commentSub = supabase
                 .channel(`comments-${id}`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'report_comments', filter: `report_id=eq.${id}` },
-                    payload => setComments(prev => [...prev, payload.new]))
+                    (payload: any) => {
+                        if (!payload?.new) return;
+                        setComments(prev => [...prev, payload.new]);
+                    })
                 .subscribe();
 
             return () => {

@@ -65,16 +65,17 @@ export const useOperations = () => {
             });
         });
 
-        const channels = [
-            supabase.channel('workers-changes').on('postgres_changes', { event: '*', table: 'workers', schema: 'public' }, () => fetchData(true)).subscribe(),
-            supabase.channel('escalations-changes').on('postgres_changes', { event: '*', table: 'escalations', schema: 'public' }, () => fetchData(true)).subscribe(),
-            supabase.channel('broadcasts-changes').on('postgres_changes', { event: '*', table: 'broadcasts', schema: 'public' }, () => fetchData(true)).subscribe(),
-            supabase.channel('logs-changes').on('postgres_changes', { event: 'INSERT', table: 'admin_activity_logs', schema: 'public' }, () => fetchData(true)).subscribe()
-        ];
+        const channel = supabase
+            .channel('operations-realtime')
+            .on('postgres_changes', { event: '*', table: 'workers', schema: 'public' }, () => fetchData(true))
+            .on('postgres_changes', { event: '*', table: 'escalations', schema: 'public' }, () => fetchData(true))
+            .on('postgres_changes', { event: '*', table: 'broadcasts', schema: 'public' }, () => fetchData(true))
+            .on('postgres_changes', { event: 'INSERT', table: 'admin_activity_logs', schema: 'public' }, () => fetchData(true))
+            .subscribe();
 
         return () => {
             socket.off('new_broadcast');
-            channels.forEach(ch => supabase.removeChannel(ch));
+            supabase.removeChannel(channel);
         };
     }, []);
 

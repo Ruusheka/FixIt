@@ -126,7 +126,8 @@ export const AnnouncementsPage: React.FC = () => {
 
         const channel = supabase
             .channel('broadcasts-realtime-citizen')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, (payload) => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, (payload: any) => {
+                if (!payload?.new) return;
                 console.log('📡 [Citizen Intel] New broadcast signal detected:', payload.new.title);
                 fetchBroadcasts();
             })
