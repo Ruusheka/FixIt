@@ -4,7 +4,7 @@ exports.optionalAuth = exports.requireAuth = void 0;
 const supabase_1 = require("../config/supabase");
 const requireAuth = async (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(/\s+/)[1];
         if (!token) {
             return res.status(401).json({ error: 'Unauthorized: No token provided' });
         }
@@ -27,7 +27,7 @@ const optionalAuth = async (req, res, next) => {
         const authHeader = req.headers.authorization;
         console.log('--- Auth Middleware Check ---');
         console.log('Authorization Header:', authHeader ? 'Present' : 'MISSING');
-        const token = authHeader?.split(' ')[1];
+        const token = authHeader?.split(/\s+/)[1];
         if (!token) {
             console.log('No token found in Authorization header.');
             return next();

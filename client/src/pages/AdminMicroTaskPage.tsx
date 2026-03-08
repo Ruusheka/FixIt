@@ -319,8 +319,8 @@ const AdminCreateTaskModal: React.FC<{ adminId: string; onCreate: (p: Partial<Mi
                         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                         <MapEvents onLocationSelect={setLocation} />
                         {location && <Marker position={[location.lat, location.lng]} />}
+                        <ChangeView center={mapCenter} />
                     </MapContainer>
-                    <ChangeView center={mapCenter} />
                     <div className="absolute top-4 left-4 right-4 z-[1000] pointer-events-none">
                         <div className="bg-brand-secondary text-white p-4 rounded-2xl shadow-2xl backdrop-blur-md bg-brand-secondary/90 border border-white/10">
                             <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">

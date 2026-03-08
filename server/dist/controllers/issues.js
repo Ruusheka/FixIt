@@ -7,7 +7,7 @@ const reportIssue = async (req, res) => {
     try {
         const { title, description, category, latitude, longitude, address, 
         // AI pre-verified fields (sent from frontend after user confirmation)
-        ai_category, ai_tags, ai_description, ai_risk_score, ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated, image_url: existing_image_url } = req.body;
+        ai_category, ai_tags, ai_description, ai_risk_score, ai_severity, ai_urgency, ai_impact, ai_confidence, ai_generated, existing_image_url } = req.body;
         const userId = req.user?.id || null;
         console.log('--- Issue Submission ---');
         console.log('Authenticated User ID:', userId);
@@ -71,9 +71,9 @@ const reportIssue = async (req, res) => {
                 title: title || `${finalCategory} Report`,
                 description: finalDescription,
                 category: finalCategory,
-                severity: Math.round(riskScore / 10), // keep legacy int severity
-                risk_score: riskScore / 100, // legacy float
-                risk_score_int: riskScore, // new int
+                severity: Math.max(1, Math.min(10, Math.round(riskScore / 10))), // ensure 1-10
+                risk_score: riskScore / 100,
+                risk_score_int: riskScore,
                 severity_label: severityLabel,
                 priority,
                 urgency: ai_urgency || 'Normal',
@@ -83,18 +83,24 @@ const reportIssue = async (req, res) => {
                 auto_tags: tags,
                 analysis_summary: finalDescription,
                 image_url: imageUrl,
-                location: `POINT(${longitude} ${latitude})`,
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude),
-                address,
+                location: (longitude && latitude) ? `POINT(${longitude} ${latitude})` : null,
+                latitude: parseFloat(latitude) || 12.9716, // fallback to avoid NaN
+                longitude: parseFloat(longitude) || 77.5946,
+                address: address || 'Location Unknown',
                 status: 'reported',
                 is_escalated: autoEscalate,
                 is_auto_escalated: autoEscalate
             }])
             .select()
             .single();
-        if (error)
+        if (error) {
+            console.error('--- Supabase Insert Error ---');
+            console.error('Code:', error.code);
+            console.error('Message:', error.message);
+            console.error('Details:', error.details);
+            console.error('Hint:', error.hint);
             throw error;
+        }
         // 🚀 Optimised: Send response immediately to unblock frontend
         res.status(201).json(data);
         // 🚀 Non-critical tasks moved to "background"
@@ -118,11 +124,16 @@ const reportIssue = async (req, res) => {
                 console.error('[Background Task Error]:', bgError);
             }
         })();
-        return; // Prevent further execution in try/catch
     }
     catch (error) {
+        console.error('--- Issue Submission Error ---');
         console.error(error);
-        res.status(500).json({ error: error.message });
+        // Surface Supabase or validation errors specifically
+        const status = error.code === '23505' || error.code === '23503' ? 409 : 400;
+        res.status(error.status || status).json({
+            error: error.message || 'Data transmission failed',
+            details: error.details || error.hint || null
+        });
     }
 };
 exports.reportIssue = reportIssue;
