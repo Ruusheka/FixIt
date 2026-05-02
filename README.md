@@ -19,6 +19,8 @@ This leads to delayed resolutions and reduced trust in civic systems.
 
 ## 💡 Our Solution
 
+[![FixIt Demo](screenshot.png)](https://fixit-r6s3.onrender.com/)
+
 ZapFlux provides a structured and transparent workflow where:
 1. **Citizens** can report issues by uploading images and location.
 2. **The system** analyzes the issue using AI.
