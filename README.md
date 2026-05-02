@@ -2,7 +2,7 @@
 
 > **An AI-Powered Civic Issue Management & Predictive Analytics Platform**
 
-ZapFlux (FixIt) is a full-stack web platform designed to streamline the process of reporting, managing, and resolving civic issues by connecting citizens, administrators, and field workers in a single unified system.
+FixIt is a full-stack web platform designed to streamline the process of reporting, managing, and resolving civic issues by connecting citizens, administrators, and field workers in a single unified system.
 
 ---
 
